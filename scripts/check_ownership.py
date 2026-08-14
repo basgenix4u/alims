@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -52,12 +54,33 @@ def matches(path: str, patterns: list[str]) -> bool:
     return False
 
 
+def content_matches_base(path: str, base_ref: str) -> bool:
+    """True when the file's final content equals the base branch's.
+
+    A path can appear in a PR diff yet end up byte-identical to base — for
+    example a coordinator-owned file that was touched and then reverted, or
+    a branch that simply predates a change which landed on base. Blaming the
+    author for a no-op edit is noise, so treat it as unmodified.
+    """
+    if not base_ref:
+        return False
+    try:
+        head = subprocess.run(["git", "hash-object", path], capture_output=True,
+                              text=True, check=True).stdout.strip()
+        base = subprocess.run(["git", "rev-parse", f"{base_ref}:{path}"],
+                              capture_output=True, text=True, check=True).stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+    return bool(head) and head == base
+
+
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
         print("usage: check_ownership.py <branch> <file>...", file=sys.stderr)
         return 2
 
     branch, files = argv[1], [f for f in argv[2:] if f.strip()]
+    base_ref = os.environ.get("OWNERSHIP_BASE_REF", "")
     if not files:
         print("No changed files to check.")
         return 0
@@ -88,6 +111,12 @@ def main(argv: list[str]) -> int:
             continue
 
         if matches(f, COORDINATOR_ONLY) and not is_coordinator:
+            if content_matches_base(f, base_ref):
+                # Appears in the diff but is byte-identical to base: the
+                # author touched it and reverted, so there is nothing to
+                # blame. Surfaced so a reviewer can still see it happened.
+                print(f"  note: {f} appears in the diff but matches base — treated as unmodified")
+                continue
             violations.append((f, "coordinator-owned file"))
             continue
 
@@ -95,6 +124,9 @@ def main(argv: list[str]) -> int:
             continue
 
         if matches(f, owners[agent]):
+            continue
+
+        if content_matches_base(f, base_ref):
             continue
 
         # Identify who does own it, to make the error actionable.
