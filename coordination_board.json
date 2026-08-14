@@ -1,0 +1,765 @@
+{
+  "$schema": "./docs/schemas/coordination_board.schema.json",
+  "board_version": "1.0.0",
+  "project": {
+    "name": "ALIMS",
+    "tagline": "Preserve. Connect. Activate.",
+    "repository": "basgenix4u/alims",
+    "owner": "basgenix4u",
+    "source_of_truth": "docs/PRD.md",
+    "prd_version": "2.0",
+    "current_release": "Release 1 — The Trusted Research Record"
+  },
+  "meta": {
+    "last_updated": "2026-08-14T00:15:00Z",
+    "updated_by": "agent_5",
+    "sprint": "S01",
+    "sprint_window": "2026-08-14 → 2026-08-28",
+    "board_owner": "agent_5",
+    "read_cadence": "Every agent MUST read this file at the start of every turn, before any other action."
+  },
+  "protocol": {
+    "name": "Git-Ops Collaboration Protocol",
+    "version": "1.0",
+    "branching_model": {
+      "main": "Protected. Release-ready only. Agent 5 merges exclusively.",
+      "dev": "Protected integration branch. All feature branches target dev. Agent 5 merges exclusively.",
+      "feature_branch_pattern": "<type>/agent-<n>/<short-slug>",
+      "allowed_types": ["feat", "fix", "chore", "docs", "test", "refactor", "design"],
+      "example": "feat/agent-2/record-versioning"
+    },
+    "rules": [
+      "NEVER commit directly to main or dev. Feature branch + PR only.",
+      "NEVER force-push to any shared branch.",
+      "Rebase onto latest dev before opening a PR.",
+      "One PR per task_id. Reference the task_id in the PR title.",
+      "Conventional Commits required: type(scope): subject",
+      "PR must pass CI (lint, typecheck, unit, build) before Agent 5 reviews.",
+      "Only Agent 5 merges. Do not self-merge, even if you have permission.",
+      "Do NOT edit files outside your owned_paths. Request changes via a roadblock entry.",
+      "Never commit secrets. .env stays local; only .env.example is tracked.",
+      "If blocked >1 turn, append to roadblocks[] and continue with your next unblocked task.",
+      "api_specification.md is the contract. Backend implements it, frontend consumes it. Neither may change it unilaterally — request via roadblock."
+    ],
+    "pr_template": ".github/pull_request_template.md",
+    "definition_of_done": [
+      "Code compiles with zero TypeScript errors (tsc --noEmit)",
+      "ESLint passes with zero errors",
+      "Unit tests written and passing for new logic",
+      "No mock/placeholder data left in the path",
+      "Matches api_specification.md exactly where applicable",
+      "Accessibility: keyboard operable + labelled (frontend tasks)",
+      "PR description references task_id and PRD section"
+    ]
+  },
+  "milestones": [
+    {
+      "id": "M0",
+      "title": "Foundation & Contracts",
+      "status": "in_progress",
+      "owner": "agent_5",
+      "due": "2026-08-16",
+      "exit_criteria": [
+        "Repo live with main + dev protected",
+        "coordination_board.json and api_specification.md published",
+        "Monorepo scaffold builds green",
+        "All agents unblocked with at least one assigned task"
+      ]
+    },
+    {
+      "id": "M1",
+      "title": "Identity, Tenancy & Policy Engine",
+      "status": "pending",
+      "owner": "agent_1",
+      "due": "2026-08-19",
+      "exit_criteria": [
+        "Auth + refresh rotation + TOTP MFA operational",
+        "Central policy engine enforcing deny-by-default",
+        "PostgreSQL RLS active; cross-tenant isolation tests green",
+        "Hash-chained audit log append-only and verifiable"
+      ]
+    },
+    {
+      "id": "M2",
+      "title": "Research Record, Versions & Uploads",
+      "status": "pending",
+      "owner": "agent_2",
+      "due": "2026-08-22",
+      "exit_criteria": [
+        "Record CRUD + draft save + validation per PRD 6.2",
+        "Append-only versioning with DB immutability trigger",
+        "Resumable presigned uploads with receipts and scan pipeline"
+      ]
+    },
+    {
+      "id": "M3",
+      "title": "Workflow, Verification & Certificates",
+      "status": "pending",
+      "owner": "agent_3",
+      "due": "2026-08-25",
+      "exit_criteria": [
+        "Submit → review → return → resubmit → verified lifecycle",
+        "Similarity advisory only; human decision required for outcomes",
+        "Certificate issue/supersede/revoke + public QR verification page"
+      ]
+    },
+    {
+      "id": "M4",
+      "title": "Frontend Application Shell & Journeys",
+      "status": "pending",
+      "owner": "agent_4",
+      "due": "2026-08-27",
+      "exit_criteria": [
+        "Auth, student, supervisor, registry and public journeys wired to live API",
+        "Zero mock data remaining",
+        "Production build green, zero TS/lint errors"
+      ]
+    },
+    {
+      "id": "M5",
+      "title": "Design System & WCAG 2.2 AA",
+      "status": "pending",
+      "owner": "agent_6",
+      "due": "2026-08-20",
+      "exit_criteria": [
+        "Tokens, typography, colour system all AA contrast verified",
+        "Core component specs delivered",
+        "axe-core clean on delivered components"
+      ]
+    },
+    {
+      "id": "M6",
+      "title": "Production Readiness & Release v0.1.0",
+      "status": "pending",
+      "owner": "agent_5",
+      "due": "2026-08-28",
+      "exit_criteria": [
+        "Docker, CI/CD, security scanning green",
+        "PRD §11 acceptance scenarios executable and passing",
+        "README + deployment docs complete",
+        "Tagged GitHub Release with assets"
+      ]
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent_5",
+      "role": "Lead Software Architect · SRE · Technical Coordinator",
+      "status": "active",
+      "specialisation": "Architecture, schema, API contracts, code review, merge authority, CI/CD, release",
+      "owned_paths": [
+        "coordination_board.json",
+        "api_specification.md",
+        "docs/**",
+        "prisma/schema.prisma",
+        ".github/**",
+        "docker/**",
+        "docker-compose.yml",
+        "turbo.json",
+        "pnpm-workspace.yaml",
+        "packages/config/**"
+      ],
+      "merge_authority": true,
+      "active_tasks": ["T-000", "T-001", "T-002"],
+      "completed_tasks": [],
+      "notes": "Sole merge authority for main and dev. Owns the DB schema and the API contract."
+    },
+    {
+      "id": "agent_1",
+      "role": "Senior Backend Engineer — Identity, Tenancy & Security",
+      "status": "awaiting_scaffold",
+      "specialisation": "Auth, MFA, RBAC policy engine, RLS multi-tenancy, audit chain, OWASP hardening",
+      "owned_paths": [
+        "apps/api/src/modules/auth/**",
+        "apps/api/src/modules/institutions/**",
+        "apps/api/src/modules/members/**",
+        "apps/api/src/domain/policy/**",
+        "apps/api/src/infrastructure/audit/**",
+        "apps/api/src/interface/guards/**",
+        "prisma/migrations/**rls**"
+      ],
+      "active_tasks": [],
+      "completed_tasks": [],
+      "notes": "Blocked until M0 scaffold lands. Owns the security boundary — highest review scrutiny."
+    },
+    {
+      "id": "agent_2",
+      "role": "Senior Backend Engineer — Records, Versions & Storage",
+      "status": "awaiting_scaffold",
+      "specialisation": "Research Record domain, append-only versioning, S3 presigned resumable uploads, scan pipeline",
+      "owned_paths": [
+        "apps/api/src/modules/records/**",
+        "apps/api/src/modules/versions/**",
+        "apps/api/src/modules/uploads/**",
+        "apps/api/src/infrastructure/storage/**",
+        "apps/worker/src/processors/scan/**",
+        "apps/worker/src/processors/checksum/**"
+      ],
+      "active_tasks": [],
+      "completed_tasks": [],
+      "notes": "Blocked until M0 scaffold lands. PRD A3: approved versions are immutable — enforce at DB, not app."
+    },
+    {
+      "id": "agent_3",
+      "role": "Senior Backend Engineer — Workflow, Verification & Discovery",
+      "status": "awaiting_scaffold",
+      "specialisation": "Review workflow state machine, similarity advisory, certificates + QR, search & discovery",
+      "owned_paths": [
+        "apps/api/src/modules/review/**",
+        "apps/api/src/modules/certificates/**",
+        "apps/api/src/modules/discovery/**",
+        "apps/api/src/modules/public/**",
+        "apps/api/src/domain/state-machines/**",
+        "apps/worker/src/processors/similarity/**",
+        "apps/worker/src/processors/embargo/**"
+      ],
+      "active_tasks": [],
+      "completed_tasks": [],
+      "notes": "Blocked until M0 scaffold lands. PRD A5: similarity NEVER mutates record status. Human decision required."
+    },
+    {
+      "id": "agent_4",
+      "role": "Senior Frontend Engineer — Web Application",
+      "status": "awaiting_scaffold",
+      "specialisation": "Next.js App Router, TanStack Query, accessible journeys, state management, API integration",
+      "owned_paths": [
+        "apps/web/src/app/**",
+        "apps/web/src/features/**",
+        "apps/web/src/hooks/**",
+        "apps/web/src/lib/**",
+        "apps/web/src/i18n/**"
+      ],
+      "active_tasks": [],
+      "completed_tasks": [],
+      "notes": "Blocked until M0 scaffold + api_specification.md. Consumes contracts; never invents endpoints."
+    },
+    {
+      "id": "agent_6",
+      "role": "UI/UX Designer — Design System & Accessibility",
+      "status": "awaiting_scaffold",
+      "specialisation": "Design tokens, WCAG 2.2 AA, component specs, responsive & low-bandwidth patterns",
+      "owned_paths": [
+        "packages/ui/**",
+        "apps/web/src/styles/**",
+        "apps/web/src/components/**",
+        "docs/design/**"
+      ],
+      "active_tasks": [],
+      "completed_tasks": [],
+      "notes": "Blocked until M0 scaffold lands. WCAG 2.2 AA is a hard PRD requirement (§9.3), not aspirational."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-000",
+      "title": "Create private repository and establish Git-Ops protocol",
+      "assignee": "agent_5",
+      "status": "in_progress",
+      "priority": "P0",
+      "milestone": "M0",
+      "prd_refs": [],
+      "branch": "main",
+      "depends_on": [],
+      "acceptance": [
+        "Private repo basgenix4u/alims live",
+        "main and dev branches created and protected",
+        "coordination_board.json and api_specification.md on main"
+      ]
+    },
+    {
+      "id": "T-001",
+      "title": "Publish API specification v1 (the handshake contract)",
+      "assignee": "agent_5",
+      "status": "in_progress",
+      "priority": "P0",
+      "milestone": "M0",
+      "prd_refs": ["6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9", "6.10"],
+      "branch": "main",
+      "depends_on": ["T-000"],
+      "acceptance": [
+        "Every Release 1 endpoint documented with verb, path, auth, request, response, status codes",
+        "Error envelope standardised (RFC 9457)",
+        "Frontend and backend can build in parallel with zero ambiguity"
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "Scaffold monorepo: apps/api, apps/web, apps/worker, packages/*",
+      "assignee": "agent_5",
+      "status": "pending",
+      "priority": "P0",
+      "milestone": "M0",
+      "prd_refs": [],
+      "branch": "chore/agent-5/monorepo-scaffold",
+      "depends_on": ["T-000"],
+      "acceptance": [
+        "pnpm + Turborepo workspace builds green",
+        "Root configs: tsconfig, eslint, prettier, gitignore, env.example",
+        "GET /api/v1/health returns 200",
+        "docker-compose brings up postgres, redis, minio, mailhog"
+      ]
+    },
+    {
+      "id": "T-003",
+      "title": "Author Prisma schema for Release 1 + RLS migration",
+      "assignee": "agent_5",
+      "status": "pending",
+      "priority": "P0",
+      "milestone": "M0",
+      "prd_refs": ["6.1", "6.2", "6.3", "9.1"],
+      "branch": "chore/agent-5/prisma-schema",
+      "depends_on": ["T-002"],
+      "acceptance": [
+        "All Release 1 + Release 2 core tables modelled",
+        "RLS policies on every tenant-owned table",
+        "Immutability trigger on approved record_version rows",
+        "Append-only trigger on audit_event"
+      ]
+    },
+    {
+      "id": "T-100",
+      "title": "Auth: register, login, refresh rotation with reuse detection, logout",
+      "assignee": "agent_1",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M1",
+      "prd_refs": ["9.1"],
+      "branch": "feat/agent-1/auth-core",
+      "depends_on": ["T-002", "T-003"],
+      "acceptance": [
+        "Argon2id hashing; no plaintext anywhere",
+        "Access token 15m; refresh rotating in httpOnly SameSite=Strict Secure cookie",
+        "Refresh reuse detection revokes the token family",
+        "Rate limiting + lockout on login",
+        "Unit + integration tests green"
+      ]
+    },
+    {
+      "id": "T-101",
+      "title": "TOTP MFA enrolment + step-up guard for high-impact actions",
+      "assignee": "agent_1",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M1",
+      "prd_refs": ["9.1"],
+      "branch": "feat/agent-1/mfa-stepup",
+      "depends_on": ["T-100"],
+      "acceptance": [
+        "TOTP enrol/verify with encrypted secret at rest",
+        "Step-up required for certificate issue/revoke, institution admin, restricted data access",
+        "Step-up assertion expires and cannot be replayed"
+      ]
+    },
+    {
+      "id": "T-102",
+      "title": "Central policy engine + PolicyGuard (deny-by-default)",
+      "assignee": "agent_1",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M1",
+      "prd_refs": ["9.1", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7"],
+      "branch": "feat/agent-1/policy-engine",
+      "depends_on": ["T-002"],
+      "acceptance": [
+        "Single authorize(actor, action, resource) entrypoint",
+        "All 7 PRD roles encoded with may/may-not rules",
+        "Unknown action or resource denies by default",
+        "No authorization logic anywhere in the frontend"
+      ]
+    },
+    {
+      "id": "T-103",
+      "title": "PostgreSQL RLS enforcement + cross-tenant isolation test suite",
+      "assignee": "agent_1",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M1",
+      "prd_refs": ["6.1", "9.1"],
+      "branch": "feat/agent-1/rls-tenancy",
+      "depends_on": ["T-003"],
+      "acceptance": [
+        "App connects as non-superuser, non-BYPASSRLS role",
+        "Tenant context set per request",
+        "Test proves cross-tenant read returns zero rows on every tenant table"
+      ]
+    },
+    {
+      "id": "T-104",
+      "title": "Hash-chained tamper-evident audit log + chain verifier",
+      "assignee": "agent_1",
+      "status": "blocked",
+      "priority": "P1",
+      "milestone": "M1",
+      "prd_refs": ["9.1"],
+      "branch": "feat/agent-1/audit-chain",
+      "depends_on": ["T-003"],
+      "acceptance": [
+        "Every consequential action appends an audit event",
+        "prev_hash chain verified by CLI command",
+        "UPDATE and DELETE rejected by DB trigger",
+        "PII redacted from payloads"
+      ]
+    },
+    {
+      "id": "T-105",
+      "title": "Institution onboarding, departments, programmes, sessions",
+      "assignee": "agent_1",
+      "status": "blocked",
+      "priority": "P1",
+      "milestone": "M1",
+      "prd_refs": ["6.1"],
+      "branch": "feat/agent-1/institutions",
+      "depends_on": ["T-102"],
+      "acceptance": [
+        "Institution statuses: pending_verification, verified, suspended, archived",
+        "Only verified institutions may issue Institutionally Verified status",
+        "Name-change and department-merge history preserved"
+      ]
+    },
+    {
+      "id": "T-200",
+      "title": "Research Record CRUD, draft save, field validation",
+      "assignee": "agent_2",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M2",
+      "prd_refs": ["6.2"],
+      "branch": "feat/agent-2/record-crud",
+      "depends_on": ["T-002", "T-003"],
+      "acceptance": [
+        "All required/optional fields per PRD 6.2 table",
+        "Title 10–500, abstract 100–10000, keywords 1–20 enforced server-side",
+        "Draft saves without complete publication fields",
+        "Official submission blocked until required institutional fields complete"
+      ]
+    },
+    {
+      "id": "T-201",
+      "title": "Append-only version history with immutability enforcement",
+      "assignee": "agent_2",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M2",
+      "prd_refs": ["6.3", "7.1", "11.2"],
+      "branch": "feat/agent-2/record-versioning",
+      "depends_on": ["T-200"],
+      "acceptance": [
+        "Submitted/approved versions never overwritten",
+        "New revision creates a new version with change summary",
+        "Version states visible: current, returned, approved, superseded, withdrawn, disputed",
+        "DB trigger rejects mutation of immutable versions"
+      ]
+    },
+    {
+      "id": "T-202",
+      "title": "Resumable presigned multipart uploads + deposit receipts",
+      "assignee": "agent_2",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M2",
+      "prd_refs": ["6.3", "8"],
+      "branch": "feat/agent-2/uploads",
+      "depends_on": ["T-200"],
+      "acceptance": [
+        "Presigned multipart; files never transit the API server",
+        "Interrupted upload resumes without losing record metadata",
+        "Receipt issued only after confirmed full receipt",
+        "Accepted formats, size limits, progress surfaced before upload begins"
+      ]
+    },
+    {
+      "id": "T-203",
+      "title": "File safety pipeline: checksum, virus scan, unsafe-file handling",
+      "assignee": "agent_2",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M2",
+      "prd_refs": ["6.3", "8", "9.1"],
+      "branch": "feat/agent-2/file-safety",
+      "depends_on": ["T-202"],
+      "acceptance": [
+        "SHA-256 stored per version",
+        "Submission blocked while processing or on failed scan",
+        "Unsafe file returns plain-language message with a next action, no internal detail",
+        "Duplicate-upload prompt distinguishes new version from accidental duplicate"
+      ]
+    },
+    {
+      "id": "T-300",
+      "title": "Workflow engine: submit, assign, review, return, resubmit",
+      "assignee": "agent_3",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M3",
+      "prd_refs": ["5.1", "7.1", "11.1", "11.2"],
+      "branch": "feat/agent-3/workflow-engine",
+      "depends_on": ["T-201", "T-102"],
+      "acceptance": [
+        "Lifecycle state machine as pure, exhaustively tested functions",
+        "Illegal transitions unrepresentable",
+        "Supervisor never auto-approves on deadline lapse",
+        "Reviewer cannot edit a student's submitted file"
+      ]
+    },
+    {
+      "id": "T-301",
+      "title": "Similarity assessment as advisory signal only",
+      "assignee": "agent_3",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M3",
+      "prd_refs": ["6.5", "11.3"],
+      "branch": "feat/agent-3/similarity-advisory",
+      "depends_on": ["T-300"],
+      "acceptance": [
+        "Similarity service structurally cannot mutate record status",
+        "Status transition requires human_decision_id",
+        "Results visible only to authorised roles",
+        "Reviewer must select outcome + reason from the PRD 6.5 set",
+        "No automatic rejection, labelling, or certificate cancellation"
+      ]
+    },
+    {
+      "id": "T-302",
+      "title": "Certificates: issue, supersede, revoke + PDF with QR",
+      "assignee": "agent_3",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M3",
+      "prd_refs": ["6.4", "7.2", "11.5"],
+      "branch": "feat/agent-3/certificates",
+      "depends_on": ["T-300", "T-101"],
+      "acceptance": [
+        "Certificate bound to a specific version, never to a record",
+        "Contains only the 10 approved PRD 6.4 fields",
+        "Makes no ownership/originality/degree claim",
+        "Issue and revoke require step-up MFA"
+      ]
+    },
+    {
+      "id": "T-303",
+      "title": "Public QR verification endpoint (narrow projection)",
+      "assignee": "agent_3",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M3",
+      "prd_refs": ["6.4", "11.4", "11.5"],
+      "branch": "feat/agent-3/public-verify",
+      "depends_on": ["T-302"],
+      "acceptance": [
+        "Returns exactly one of Valid, Superseded, Revoked, Not Found",
+        "Private academic, identity, assessment and review data unreachable from this path",
+        "No sensitive data embedded in the QR token itself",
+        "p95 response under 2 seconds"
+      ]
+    },
+    {
+      "id": "T-304",
+      "title": "Search & discovery with safe result projection",
+      "assignee": "agent_3",
+      "status": "blocked",
+      "priority": "P1",
+      "milestone": "M3",
+      "prd_refs": ["6.10", "11.4"],
+      "branch": "feat/agent-3/search-discovery",
+      "depends_on": ["T-200"],
+      "acceptance": [
+        "All 14 PRD 6.10 filter dimensions supported",
+        "Results show only permitted fields",
+        "Restricted titles, abstracts, files and reviewer notes never leak to unauthorised viewers",
+        "p95 under 3 seconds"
+      ]
+    },
+    {
+      "id": "T-305",
+      "title": "Access levels, embargo scheduling, access requests",
+      "assignee": "agent_3",
+      "status": "blocked",
+      "priority": "P1",
+      "milestone": "M3",
+      "prd_refs": ["6.6", "11.4"],
+      "branch": "feat/agent-3/access-embargo",
+      "depends_on": ["T-200"],
+      "acceptance": [
+        "All 5 PRD access levels enforced server-side",
+        "Embargoed full text undownloadable while metadata stays discoverable",
+        "Embargo expiry never overrides active rights restriction or open dispute",
+        "Requester never receives private contact details"
+      ]
+    },
+    {
+      "id": "T-400",
+      "title": "Frontend app shell, routing, i18n scaffolding, API client",
+      "assignee": "agent_4",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M4",
+      "prd_refs": ["9.3", "9.4"],
+      "branch": "feat/agent-4/app-shell",
+      "depends_on": ["T-002", "T-001"],
+      "acceptance": [
+        "Typed API client generated from packages/contracts",
+        "Skip links, landmarks, focus management in place",
+        "i18n ready; no hardcoded user-facing strings",
+        "Zero TypeScript errors"
+      ]
+    },
+    {
+      "id": "T-401",
+      "title": "Authentication UI: login, register, MFA, step-up, reset",
+      "assignee": "agent_4",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M4",
+      "prd_refs": ["9.1", "9.3"],
+      "branch": "feat/agent-4/auth-ui",
+      "depends_on": ["T-400", "T-100"],
+      "acceptance": [
+        "Full keyboard operability",
+        "Errors not conveyed by colour alone",
+        "No token in localStorage; refresh handled via httpOnly cookie",
+        "Session expiry handled gracefully"
+      ]
+    },
+    {
+      "id": "T-402",
+      "title": "Student journey: dashboard, record wizard, upload, receipts, versions",
+      "assignee": "agent_4",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M4",
+      "prd_refs": ["5.1", "6.2", "6.3", "8"],
+      "branch": "feat/agent-4/student-journey",
+      "depends_on": ["T-400", "T-200", "T-202"],
+      "acceptance": [
+        "Field help explains why data is needed and who will see it",
+        "Upload shows formats, limits, progress, interruption and completion states",
+        "Unsaved state clearly indicated; never claims submitted without a receipt",
+        "Version history visible and never destructive"
+      ]
+    },
+    {
+      "id": "T-403",
+      "title": "Supervisor journey: task queue, review, structured feedback",
+      "assignee": "agent_4",
+      "status": "blocked",
+      "priority": "P1",
+      "milestone": "M4",
+      "prd_refs": ["4.2", "5.1", "11.2"],
+      "branch": "feat/agent-4/supervisor-journey",
+      "depends_on": ["T-400", "T-300"],
+      "acceptance": [
+        "Assigned work, latest versions, declared contributors, pending actions in one place",
+        "Return-for-revision requires a structured comment",
+        "No affordance to edit a student's file"
+      ]
+    },
+    {
+      "id": "T-404",
+      "title": "Registry journey + public pages: verification, certificates, search, QR",
+      "assignee": "agent_4",
+      "status": "blocked",
+      "priority": "P1",
+      "milestone": "M4",
+      "prd_refs": ["5.4", "6.4", "6.10"],
+      "branch": "feat/agent-4/registry-public",
+      "depends_on": ["T-400", "T-302", "T-303", "T-304"],
+      "acceptance": [
+        "QR page renders Valid/Superseded/Revoked/Not Found unambiguously",
+        "Public search exposes only permitted fields",
+        "Certificate issuance UI enforces step-up MFA"
+      ]
+    },
+    {
+      "id": "T-600",
+      "title": "Design tokens, colour system, typography — WCAG 2.2 AA verified",
+      "assignee": "agent_6",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M5",
+      "prd_refs": ["9.3"],
+      "branch": "design/agent-6/design-tokens",
+      "depends_on": ["T-002"],
+      "acceptance": [
+        "Every text/background pair meets AA contrast, documented with ratios",
+        "Visible focus states on all interactive elements",
+        "Type scale readable at 200% zoom without loss of function",
+        "Tokens exported as CSS variables + Tailwind theme"
+      ]
+    },
+    {
+      "id": "T-601",
+      "title": "Core accessible component library",
+      "assignee": "agent_6",
+      "status": "blocked",
+      "priority": "P0",
+      "milestone": "M5",
+      "prd_refs": ["9.3"],
+      "branch": "design/agent-6/component-library",
+      "depends_on": ["T-600"],
+      "acceptance": [
+        "Button, Input, Select, Dialog, Tabs, Toast, Table, FileUpload, StatusBadge",
+        "Radix primitives; correct ARIA and keyboard behaviour",
+        "axe-core zero violations",
+        "Every component documented with usage and a11y notes"
+      ]
+    },
+    {
+      "id": "T-602",
+      "title": "Verification status badge system + plain-language status vocabulary",
+      "assignee": "agent_6",
+      "status": "blocked",
+      "priority": "P1",
+      "milestone": "M5",
+      "prd_refs": ["6.4", "1.5", "9.3"],
+      "branch": "design/agent-6/status-system",
+      "depends_on": ["T-601"],
+      "acceptance": [
+        "All 10 PRD verification labels visually distinct without relying on colour alone",
+        "Plain-language explanation for each status",
+        "No score, percentage, or ranking visual anywhere",
+        "Distinguishes Self-Published from Institutionally Verified unmistakably"
+      ]
+    }
+  ],
+  "roadblocks": [
+    {
+      "id": "RB-001",
+      "raised_by": "agent_5",
+      "severity": "low",
+      "status": "accepted_with_mitigation",
+      "title": "No Docker daemon available in the coordination sandbox",
+      "detail": "Container images cannot be built or run locally by Agent 5. Dockerfiles and compose files are authored and linted here; build/run validation is delegated to GitHub Actions runners where Docker is available.",
+      "mitigation": "CI job docker-build validates all images on every PR touching docker/**.",
+      "raised_at": "2026-08-14T00:15:00Z"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "ADR-001",
+      "title": "Full TypeScript monorepo (Next.js + NestJS + Prisma + PostgreSQL)",
+      "status": "accepted",
+      "rationale": "Shared contracts package makes the API contract a compile-time dependency of both client and server, directly mitigating this product's primary risk: authorization drift between layers."
+    },
+    {
+      "id": "ADR-002",
+      "title": "PostgreSQL Row-Level Security for tenant isolation",
+      "status": "accepted",
+      "rationale": "PRD §6.1 forbids cross-institution access. RLS enforces this at the data layer so a forgotten WHERE clause cannot leak data across tenants."
+    },
+    {
+      "id": "ADR-003",
+      "title": "Recursive CTEs for lineage instead of a graph database",
+      "status": "accepted",
+      "rationale": "Release 1–2 lineage is a modest-depth typed DAG. A second datastore would double the multi-tenant authorization surface for no near-term benefit. Isolated behind LineageRepository for a later swap."
+    },
+    {
+      "id": "ADR-004",
+      "title": "Similarity provider is advisory and structurally isolated",
+      "status": "accepted",
+      "rationale": "PRD §6.5 and §11.3 forbid automated accusations. The similarity path has no write access to record status; transitions require a recorded human decision."
+    }
+  ],
+  "integration_queue": [],
+  "merge_log": []
+}
