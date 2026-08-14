@@ -53,7 +53,7 @@ export default function LineagePage() {
       {query.isError ? (
         <div
           role="alert"
-          className="rounded-md border-2 border-amber-700 bg-amber-50 px-4 py-3 text-amber-950"
+          className="tone-advisory rounded-md border-2 px-4 py-3"
         >
           ⚠ {t('lineage.error')}
         </div>

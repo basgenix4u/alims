@@ -31,13 +31,20 @@ export function BarChart({ title, buckets }: Props) {
               <text x={0} y={y + 12} className="fill-ink" fontSize="11">
                 {bucket.label}
               </text>
-              <rect x={130} y={y} width={260} height={16} fill="#e2e8f0" rx={2} />
+              <rect
+                x={130}
+                y={y}
+                width={260}
+                height={16}
+                fill="var(--color-border-soft, var(--border-soft))"
+                rx={2}
+              />
               <rect
                 x={130}
                 y={y}
                 width={Math.max(bucket.count > 0 ? 4 : 0, width)}
                 height={16}
-                fill="#1d4ed8"
+                fill="var(--color-primary-bg, var(--brand-700))"
               />
               <text x={396} y={y + 12} textAnchor="end" className="fill-ink" fontSize="11">
                 {bucket.count}

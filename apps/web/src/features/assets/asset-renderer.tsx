@@ -79,7 +79,7 @@ export function AssetRenderer({ src, mimeHint, title }: Props) {
     return (
       <div
         role="alert"
-        className="rounded-md border-2 border-red-700 bg-red-50 px-3 py-2 text-red-950"
+        className="tone-danger rounded-md border-2 px-3 py-2"
       >
         <p className="font-semibold">✕ {t('asset.error')}</p>
         <p className="text-sm">{state.message}</p>
@@ -91,7 +91,7 @@ export function AssetRenderer({ src, mimeHint, title }: Props) {
     return (
       <div
         role="status"
-        className="rounded-md border-2 border-amber-700 bg-amber-50 px-3 py-2 text-amber-950"
+        className="tone-advisory rounded-md border-2 px-3 py-2"
       >
         <p className="font-semibold">⚠ {t('asset.unsupported')}</p>
         <p className="text-sm">{state.mime}</p>

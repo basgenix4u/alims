@@ -157,7 +157,7 @@ export function RecordWizard() {
       {dirty ? (
         <p
           role="status"
-          className="rounded-md border border-amber-700 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          className="tone-advisory rounded-md border px-3 py-2 text-sm"
         >
           ⚠ {t('wizard.unsaved')}
         </p>
@@ -166,7 +166,7 @@ export function RecordWizard() {
       {Object.keys(fieldErrors).length > 0 ? (
         <div
           role="alert"
-          className="rounded-md border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-950"
+          className="tone-danger rounded-md border-2 px-3 py-2 text-sm"
         >
           <p className="font-semibold">✕ {t('wizard.validation')}</p>
           <ul className="mt-1 list-disc ps-5">
@@ -402,7 +402,7 @@ export function RecordWizard() {
       {status === 'saved' ? (
         <p
           role="status"
-          className="rounded-md border-2 border-green-700 bg-green-50 px-3 py-2 text-sm text-green-950"
+          className="tone-verified rounded-md border-2 px-3 py-2 text-sm"
         >
           ✓ {t('wizard.saved')}
         </p>
@@ -410,7 +410,7 @@ export function RecordWizard() {
       {status === 'error' ? (
         <p
           role="alert"
-          className="rounded-md border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-950"
+          className="tone-danger rounded-md border-2 px-3 py-2 text-sm"
         >
           ✕ {statusDetail ?? t('wizard.error')}
         </p>
@@ -444,7 +444,7 @@ function Field({
       </p>
       <div aria-describedby={`${helpId}${error ? ` ${errorId}` : ''}`}>{children}</div>
       {error ? (
-        <p id={errorId} className="text-sm text-red-800">
+        <p id={errorId} className="text-sm" style={{ color: 'var(--color-danger-subtle-fg)' }}>
           ✕ {error}
         </p>
       ) : null}

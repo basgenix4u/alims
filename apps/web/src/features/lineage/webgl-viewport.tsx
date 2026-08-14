@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from 'react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useI18n } from '@/i18n/provider';
 import type { LineageLayout } from './layout';
+import { cssVarRgb } from './css-var-rgb';
 
 type Props = {
   layout: LineageLayout;
@@ -49,14 +50,19 @@ export function WebGlViewport({ layout }: Props) {
     const colLoc = gl.getAttribLocation(program, 'a_col');
     const viewLoc = gl.getUniformLocation(program, 'u_view');
 
+    const brand = cssVarRgb('--brand-700', canvas);
+    const verifiedRgb = cssVarRgb('--status-verified-solid', canvas);
+    const advisoryRgb = cssVarRgb('--status-advisory-solid', canvas);
+    const parchment = cssVarRgb('--parchment', canvas);
+
     const nodeVerts: number[] = [];
     for (const node of layout.nodes) {
-      nodeVerts.push(node.position.x, node.position.y, node.position.z, 0.11, 0.31, 0.85);
+      nodeVerts.push(node.position.x, node.position.y, node.position.z, ...brand);
     }
     const edgeVerts: number[] = [];
     for (const edge of layout.edges) {
       const verified = edge.evidenceState === 'verified' || edge.evidenceState === 'accepted';
-      const c = verified ? [0.06, 0.48, 0.33] : [0.55, 0.4, 0.08];
+      const c = verified ? verifiedRgb : advisoryRgb;
       edgeVerts.push(edge.a.x, edge.a.y, edge.a.z, ...c, edge.b.x, edge.b.y, edge.b.z, ...c);
     }
 
@@ -103,7 +109,7 @@ export function WebGlViewport({ layout }: Props) {
       if (!reduced) yaw += 0.00035;
       const aspect = canvas.width / Math.max(1, canvas.height);
       const view = lookAt(yaw, pitch, zoom, aspect, time);
-      gl.clearColor(0.96, 0.97, 0.99, 1);
+      gl.clearColor(parchment[0] ?? 1, parchment[1] ?? 1, parchment[2] ?? 1, 1);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.enable(gl.DEPTH_TEST);
       gl.uniformMatrix4fv(viewLoc, false, view);

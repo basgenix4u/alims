@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/dashboard', key: 'nav.dashboard' as const },
   { href: '/records/new', key: 'nav.newRecord' as const },
   { href: '/lineage', key: 'nav.lineage' as const },
+  /* /verify is Agent 3 (T-412 / public surfaces). Link stays so the shell can route there. */
   { href: '/verify', key: 'nav.verify' as const },
 ];
 
