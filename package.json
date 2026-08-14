@@ -6,7 +6,10 @@
   "author": "basgenix4u",
   "license": "UNLICENSED",
   "packageManager": "pnpm@9.12.0",
-  "engines": { "node": ">=20.11.0", "pnpm": ">=9.0.0" },
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -22,13 +25,20 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "board:validate": "python3 scripts/validate_board.py",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:verify-audit": "psql \"$DATABASE_MIGRATION_URL\" -c 'SELECT * FROM verify_audit_chain();'"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
     "prettier": "^3.3.3",
     "tsx": "^4.19.2",
     "turbo": "^2.3.3",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.1.0",
+    "prisma": "^6.1.0"
   }
 }

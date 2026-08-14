@@ -3,15 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -b --force",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
-    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+    "clean": "rm -rf dist .turbo tsconfig.tsbuildinfo *.tsbuildinfo"
   },
-  "dependencies": { "@alims/contracts": "workspace:*", "pino": "^9.5.0" },
+  "dependencies": {
+    "@alims/contracts": "workspace:*",
+    "pino": "^9.5.0"
+  },
   "devDependencies": {
     "@types/node": "^22.9.0",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
