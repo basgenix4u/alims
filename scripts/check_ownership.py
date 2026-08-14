@@ -22,9 +22,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 BOARD = ROOT / "coordination_board.json"
 
-# Files any agent may touch: their own tests, lockfiles produced by an
-# install, and generated artefacts. Keeps the rule strict but not petty.
-SHARED_ALLOWLIST = [
+# Fallback if the board omits shared_paths. The board is authoritative.
+FALLBACK_SHARED = [
     "pnpm-lock.yaml",
     "package.json",
     ".gitignore",
@@ -72,6 +71,11 @@ def main(argv: list[str]) -> int:
     board = json.loads(BOARD.read_text(encoding="utf-8"))
     owners = {a["id"]: a.get("owned_paths", []) for a in board["agents"]}
 
+    # Cross-cutting registration (a global guard, a Prisma module) cannot be
+    # done from inside one agent's module tree. shared_paths keeps the gate
+    # satisfiable; see ADR-009.
+    shared = board.get("shared_paths", {}).get("paths", FALLBACK_SHARED)
+
     if agent not in owners:
         print(f"::error::Unknown agent '{agent}' in branch name.")
         return 1
@@ -80,7 +84,7 @@ def main(argv: list[str]) -> int:
     violations: list[tuple[str, str]] = []
 
     for f in files:
-        if f in SHARED_ALLOWLIST:
+        if matches(f, shared):
             continue
 
         if matches(f, COORDINATOR_ONLY) and not is_coordinator:
@@ -109,8 +113,10 @@ def main(argv: list[str]) -> int:
         for p in owners[agent]:
             print(f"  {p}")
         print()
-        print("Revert those files, or raise a roadblock in coordination_board.json")
-        print("and let agent_5 make the change. See docs/AGENT_BRIEF.md section 3.")
+        print("Revert those files, or raise a roadblock:")
+        print("  create roadblocks/RB-<agent>-<slug>.md on your branch (all agents own roadblocks/**)")
+        print("  or open a GitHub issue labelled 'roadblock'.")
+        print("Never edit coordination_board.json. See docs/AGENT_BRIEF.md section 3.")
         return 1
 
     print(f"{agent}: all {len(files)} changed file(s) are within its owned_paths.")
