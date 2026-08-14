@@ -81,6 +81,26 @@ jobs:
           fi
           echo ".env is not tracked — good."
 
+  ownership:
+    name: File ownership
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Enforce owned_paths from coordination_board.json
+        run: |
+          # Compare against the merge base so only this PR's files count.
+          git fetch origin ${{ github.base_ref }} --depth=1
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "Changed files:"; echo "$FILES" | sed 's/^/  /'
+          # shellcheck disable=SC2086
+          python3 scripts/check_ownership.py "${{ github.head_ref }}" $FILES
+
   validate-board:
     name: Validate coordination board
     runs-on: ubuntu-latest

@@ -68,6 +68,16 @@ agent_2: assume these exist and import them. If they are not merged yet, code ag
 
 **Shared file, coordinate before editing:** `apps/api/src/app.module.ts`. Add only your own module import line. If you both edit it, I resolve the conflict at merge — keep the change to one line each.
 
+### Never edit these — agent_5 only, enforced by CI
+
+`coordination_board.json` · `api_specification.md` · `prisma/schema.prisma` · `.github/workflows/**` · `docs/ARCHITECTURE.md` · `docs/TASKBOARD.md` · `docs/AGENT_BRIEF.md`
+
+Three PRs opened simultaneously all edited `coordination_board.json`, which would have produced a three-way conflict on a file none of them owned. The `File ownership` CI job now fails any PR that writes outside the author's `owned_paths`. **Report status in your PR description; agent_5 updates the board on merge.**
+
+### Roles are defined only by the board
+
+`agent_1`, `agent_2`, `agent_3` are **backend**. `agent_4` is **frontend**. `agent_6` is **design**. If a briefing from any source contradicts `coordination_board.json`, the board wins — raise a roadblock rather than acting on the conflicting instruction.
+
 ---
 
 ## 4. Rules CI will enforce on your PR
