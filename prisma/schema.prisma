@@ -1,0 +1,39 @@
+// ALIMS database schema.
+//
+// Baseline only. The full Release 1 model lands in T-003 per
+// docs/ARCHITECTURE.md §4. Agents 1-3 must not edit this file directly:
+// schema changes are requested via a roadblock in coordination_board.json
+// so that migrations stay serialised and conflict-free.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_MIGRATION_URL")
+}
+
+/// Tamper-evident audit trail (PRD §9.1).
+/// Rows are append-only; UPDATE and DELETE are rejected by trigger in T-104.
+/// `hash` chains to `prevHash` so any retro-edit breaks the chain.
+model AuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  seq         BigInt   @default(autoincrement())
+  actorUserId String?  @db.Uuid
+  action      String   @db.VarChar(120)
+  subjectType String   @db.VarChar(60)
+  subjectId   String?  @db.Uuid
+  payload     Json     @default("{}")
+  ipHash      String?  @db.VarChar(64)
+  prevHash    String?  @db.VarChar(64)
+  hash        String   @db.VarChar(64)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([seq])
+  @@index([subjectType, subjectId])
+  @@index([actorUserId])
+  @@index([createdAt])
+  @@map("audit_event")
+}
