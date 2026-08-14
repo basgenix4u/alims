@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "1.0.2",
+  "board_version": "1.0.3",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -12,7 +12,7 @@
     "issue_tracker": "https://github.com/basgenix4u/alims/issues"
   },
   "meta": {
-    "last_updated": "2026-08-14T00:50:00Z",
+    "last_updated": "2026-08-14T01:00:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -951,6 +951,25 @@
         "Continue with CI-based compensating controls (currently active)"
       ],
       "raised_at": "2026-08-14T00:35:00Z"
+    },
+    {
+      "id": "RB-003",
+      "raised_by": "agent_5",
+      "severity": "medium",
+      "status": "open_needs_owner_action",
+      "title": "GitHub Actions jobs fail immediately — 0 steps executed, no runner assigned",
+      "detail": "All Branch Guard jobs on main and dev complete in ~2s with conclusion=failure, steps=0 and an empty runner_name. Logs return BlobNotFound because no job ever started. Actions is enabled (allowed_actions=all) and the workflow YAML is valid. This signature indicates GitHub-hosted runner minutes are exhausted or a billing/spending-limit block applies to private-repository Actions usage. It is NOT a workflow logic error and NOT a token scope error.",
+      "evidence": "run 31756776013: status=completed conclusion=failure started=00:16:06Z completed=00:16:08Z steps=0 runner_name=''",
+      "verification": "All four guard checks were executed locally and pass: branch-naming validator correctly blocks malformed names, PR title validator requires [T-###], secret scan finds no credential patterns, board validator reports 0 errors.",
+      "mitigation": "Local pre-push hook installed at scripts/git-hooks/pre-push enforcing the same five rules offline, activated via core.hooksPath. Enforcement therefore does not depend on Actions availability. CI will pass unchanged once runner minutes are restored.",
+      "options_for_owner": [
+        "Check Settings > Billing > Spending limits and raise or reset the Actions spending limit",
+        "Wait for the monthly free-minutes quota to reset (2000 min/month on Free for private repos)",
+        "Make the repository public — Actions minutes are unlimited on public repos",
+        "Continue with the local pre-push hook, which is already active and sufficient for development"
+      ],
+      "blocks_development": false,
+      "raised_at": "2026-08-14T01:00:00Z"
     }
   ],
   "decisions": [

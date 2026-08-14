@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# ALIMS Git-Ops pre-push guard.
+# Install:  git config core.hooksPath scripts/git-hooks
+# Works offline and does not depend on GitHub Actions availability.
+set -euo pipefail
+
+RED='\033[0;31m'; GRN='\033[0;32m'; NC='\033[0m'
+fail () { echo -e "${RED}BLOCKED:${NC} $1" >&2; exit 1; }
+
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+ACTOR="$(git config user.name || echo unknown)"
+
+# 1. Protect shared branches
+if [[ "$BRANCH" == "main" || "$BRANCH" == "dev" ]]; then
+  if [[ "$ACTOR" != "basgenix4u" ]]; then
+    fail "only agent_5 (basgenix4u) may push to '$BRANCH'. Open a PR instead."
+  fi
+else
+  # 2. Feature branch naming
+  if ! echo "$BRANCH" | grep -qE '^(feat|fix|chore|docs|test|refactor|design)/agent-[1-6]/[a-z0-9._-]+$'; then
+    fail "branch '$BRANCH' violates naming rule <type>/agent-<n>/<slug>"
+  fi
+fi
+
+# 3. Secret scan on tracked files
+PATTERN='ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}'
+if git grep -InE "$PATTERN" -- . >/dev/null 2>&1; then
+  fail "credential pattern detected in tracked files. Remove and rotate it."
+fi
+
+# 4. .env must never be tracked
+if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+  fail ".env is tracked. Remove it from the index."
+fi
+
+# 5. Coordination board integrity
+if [[ -f scripts/validate_board.py ]]; then
+  python3 scripts/validate_board.py || fail "coordination_board.json failed validation."
+fi
+
+echo -e "${GRN}pre-push checks passed${NC} (branch: $BRANCH)"
