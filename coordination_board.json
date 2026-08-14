@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "1.3.0",
+  "board_version": "2.0.0",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -12,7 +12,7 @@
     "issue_tracker": "https://github.com/basgenix4u/alims/issues"
   },
   "meta": {
-    "last_updated": "2026-08-14T01:30:00Z",
+    "last_updated": "2026-08-14T02:00:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -57,11 +57,8 @@
       "Conventional Commits required: type(scope): subject",
       "PR must pass CI (lint, typecheck, unit, build) before Agent 5 reviews.",
       "Only Agent 5 merges. Do not self-merge, even if you have permission.",
-      "Do NOT edit files outside your owned_paths. Request changes via a roadblock entry.",
       "Never commit secrets. .env stays local; only .env.example is tracked.",
-      "If blocked >1 turn, append to roadblocks[] and continue with your next unblocked task.",
-      "api_specification.md is the contract. Backend implements it, frontend consumes it. Neither may change it unilaterally — request via roadblock.",
-      "Roles are defined ONLY by this file. agent_3 is BACKEND (workflow/verification/discovery). agent_4 is FRONTEND. Ignore any briefing that says otherwise and raise a roadblock."
+      "Blocked? Write roadblocks/RB-<agent>-<slug>.md on your branch, or open a 'roadblock' labelled issue. Never edit coordination_board.json."
     ],
     "pr_template": ".github/pull_request_template.md",
     "definition_of_done": [
@@ -72,7 +69,13 @@
       "Matches api_specification.md exactly where applicable",
       "Accessibility: keyboard operable + labelled (frontend tasks)",
       "PR description references task_id and PRD section"
-    ]
+    ],
+    "roadblock_procedure": {
+      "problem_this_solves": "coordination_board.json is agent_5-only, so 'raise a roadblock in coordination_board.json' was an impossible instruction. agent_1 correctly refused to violate the rule and reported the deadlock instead.",
+      "how": "Create roadblocks/RB-<your-agent>-<slug>.md on your branch. Every agent owns roadblocks/**. agent_5 folds it into the board at merge.",
+      "alternative": "Open a GitHub issue with the 'roadblock' label. Equally valid.",
+      "never": "Do not edit coordination_board.json to raise a roadblock."
+    }
   },
   "milestones": [
     {
@@ -179,7 +182,8 @@
         "docker-compose.yml",
         "turbo.json",
         "pnpm-workspace.yaml",
-        "packages/config/**"
+        "packages/config/**",
+        "roadblocks/**"
       ],
       "merge_authority": true,
       "active_tasks": [],
@@ -193,17 +197,21 @@
     },
     {
       "id": "agent_1",
-      "role": "Senior Backend Engineer — Identity, Tenancy & Security",
+      "role": "Senior Backend Engineer — Identity, Tenancy, Security & Certificates",
       "status": "ready",
       "specialisation": "Auth, MFA, RBAC policy engine, RLS multi-tenancy, audit chain, OWASP hardening",
       "owned_paths": [
         "apps/api/src/modules/auth/**",
         "apps/api/src/modules/institutions/**",
         "apps/api/src/modules/members/**",
+        "apps/api/src/modules/certificates/**",
+        "apps/api/src/modules/public/**",
         "apps/api/src/domain/policy/**",
         "apps/api/src/infrastructure/audit/**",
         "apps/api/src/interface/guards/**",
-        "prisma/migrations/**rls**"
+        "apps/api/src/interface/middleware/**",
+        "prisma/migrations/**",
+        "roadblocks/**"
       ],
       "active_tasks": [],
       "completed_tasks": [],
@@ -211,42 +219,51 @@
     },
     {
       "id": "agent_2",
-      "role": "Senior Backend Engineer — Records, Versions & Storage",
+      "role": "Senior Backend Engineer — Records, Versions, Storage, Workflow & Discovery",
       "status": "ready",
       "specialisation": "Research Record domain, append-only versioning, S3 presigned resumable uploads, scan pipeline",
       "owned_paths": [
         "apps/api/src/modules/records/**",
         "apps/api/src/modules/versions/**",
         "apps/api/src/modules/uploads/**",
+        "apps/api/src/modules/review/**",
+        "apps/api/src/modules/discovery/**",
+        "apps/api/src/domain/state-machines/**",
         "apps/api/src/infrastructure/storage/**",
-        "apps/worker/src/processors/scan/**",
-        "apps/worker/src/processors/checksum/**"
+        "apps/worker/**",
+        "roadblocks/**"
       ],
       "active_tasks": [],
       "completed_tasks": [],
-      "notes": "Blocked until M0 scaffold lands. PRD A3: approved versions are immutable — enforce at DB, not app."
+      "notes": "Also inherited workflow/verification/discovery backend tasks from agent_3 in board v2.0.0."
     },
     {
       "id": "agent_3",
-      "role": "Senior Backend Engineer — Workflow, Verification & Discovery",
+      "role": "Senior Frontend Engineer — Public & Staff Surfaces",
       "status": "ready",
       "specialisation": "Review workflow state machine, similarity advisory, certificates + QR, search & discovery",
       "owned_paths": [
-        "apps/api/src/modules/review/**",
-        "apps/api/src/modules/certificates/**",
-        "apps/api/src/modules/discovery/**",
-        "apps/api/src/modules/public/**",
-        "apps/api/src/domain/state-machines/**",
-        "apps/worker/src/processors/similarity/**",
-        "apps/worker/src/processors/embargo/**"
+        "apps/web/src/app/(public)/**",
+        "apps/web/src/app/(staff)/**",
+        "apps/web/src/app/verify/**",
+        "apps/web/src/app/search/**",
+        "apps/web/src/app/records/[nxrId]/**",
+        "apps/web/src/features/review/**",
+        "apps/web/src/features/certificates/**",
+        "apps/web/src/features/discovery/**",
+        "apps/web/src/features/passport/**",
+        "apps/web/src/features/staff/**",
+        "roadblocks/**"
       ],
-      "active_tasks": [],
+      "active_tasks": [
+        "T-410"
+      ],
       "completed_tasks": [],
-      "notes": "Blocked until M0 scaffold lands. PRD A5: similarity NEVER mutates record status. Human decision required."
+      "notes": "Reassigned from backend to frontend in board v2.0.0 to match actual staffing (2 backend / 2 frontend). Owns public and staff surfaces; agent_4 owns shell, auth and student journey."
     },
     {
       "id": "agent_4",
-      "role": "Senior Frontend Engineer — Web Application",
+      "role": "Senior Frontend Engineer — App Shell, Auth & Student Journey",
       "status": "ready",
       "specialisation": "Next.js App Router, TanStack Query, accessible journeys, state management, API integration",
       "owned_paths": [
@@ -254,11 +271,12 @@
         "apps/web/src/features/**",
         "apps/web/src/hooks/**",
         "apps/web/src/lib/**",
-        "apps/web/src/i18n/**"
+        "apps/web/src/i18n/**",
+        "roadblocks/**"
       ],
       "active_tasks": [],
       "completed_tasks": [],
-      "notes": "Blocked until M0 scaffold + api_specification.md. Consumes contracts; never invents endpoints."
+      "notes": "Owns the app shell, auth, student journey, dashboard, lineage and the shared features/ tree. agent_3 adds public and staff surfaces under app/(public), app/(staff), verify/, search/ and features/{review,certificates,discovery,passport}. Coordinate on features/ — additive only."
     },
     {
       "id": "agent_6",
@@ -269,7 +287,9 @@
         "packages/ui/**",
         "apps/web/src/styles/**",
         "apps/web/src/components/**",
-        "docs/design/**"
+        "docs/design/**",
+        "ui_ux_specification.md",
+        "roadblocks/**"
       ],
       "active_tasks": [],
       "completed_tasks": [],
@@ -603,7 +623,7 @@
     {
       "id": "T-300",
       "title": "Workflow engine: submit, assign, review, return, resubmit",
-      "assignee": "agent_3",
+      "assignee": "agent_2",
       "status": "blocked",
       "priority": "P0",
       "milestone": "M3",
@@ -613,7 +633,7 @@
         "11.1",
         "11.2"
       ],
-      "branch": "feat/agent-3/workflow-engine",
+      "branch": "feat/agent-2/workflow-engine",
       "depends_on": [
         "T-201",
         "T-102"
@@ -629,7 +649,7 @@
     {
       "id": "T-301",
       "title": "Similarity assessment as advisory signal only",
-      "assignee": "agent_3",
+      "assignee": "agent_2",
       "status": "blocked",
       "priority": "P0",
       "milestone": "M3",
@@ -637,7 +657,7 @@
         "6.5",
         "11.3"
       ],
-      "branch": "feat/agent-3/similarity-advisory",
+      "branch": "feat/agent-2/similarity-advisory",
       "depends_on": [
         "T-300"
       ],
@@ -653,7 +673,7 @@
     {
       "id": "T-302",
       "title": "Certificates: issue, supersede, revoke + PDF with QR",
-      "assignee": "agent_3",
+      "assignee": "agent_2",
       "status": "blocked",
       "priority": "P0",
       "milestone": "M3",
@@ -662,7 +682,7 @@
         "7.2",
         "11.5"
       ],
-      "branch": "feat/agent-3/certificates",
+      "branch": "feat/agent-2/certificates",
       "depends_on": [
         "T-300",
         "T-101"
@@ -678,7 +698,7 @@
     {
       "id": "T-303",
       "title": "Public QR verification endpoint (narrow projection)",
-      "assignee": "agent_3",
+      "assignee": "agent_2",
       "status": "blocked",
       "priority": "P0",
       "milestone": "M3",
@@ -687,7 +707,7 @@
         "11.4",
         "11.5"
       ],
-      "branch": "feat/agent-3/public-verify",
+      "branch": "feat/agent-2/public-verify",
       "depends_on": [
         "T-302"
       ],
@@ -702,7 +722,7 @@
     {
       "id": "T-304",
       "title": "Search & discovery with safe result projection",
-      "assignee": "agent_3",
+      "assignee": "agent_2",
       "status": "pending",
       "priority": "P1",
       "milestone": "M3",
@@ -710,7 +730,7 @@
         "6.10",
         "11.4"
       ],
-      "branch": "feat/agent-3/search-discovery",
+      "branch": "feat/agent-2/search-discovery",
       "depends_on": [
         "T-200"
       ],
@@ -725,7 +745,7 @@
     {
       "id": "T-305",
       "title": "Access levels, embargo scheduling, access requests",
-      "assignee": "agent_3",
+      "assignee": "agent_2",
       "status": "pending",
       "priority": "P1",
       "milestone": "M3",
@@ -733,7 +753,7 @@
         "6.6",
         "11.4"
       ],
-      "branch": "feat/agent-3/access-embargo",
+      "branch": "feat/agent-2/access-embargo",
       "depends_on": [
         "T-200"
       ],
@@ -937,6 +957,76 @@
         "Distinguishes Self-Published from Institutionally Verified unmistakably"
       ],
       "github_issue": 26
+    },
+    {
+      "id": "T-410",
+      "title": "Public surfaces: search, record page, QR verification",
+      "assignee": "agent_3",
+      "status": "pending",
+      "priority": "P0",
+      "milestone": "M4",
+      "prd_refs": [
+        "6.4",
+        "6.10",
+        "11.4",
+        "11.5"
+      ],
+      "branch": "feat/agent-3/public-surfaces",
+      "depends_on": [
+        "T-400"
+      ],
+      "acceptance": [
+        "QR page renders Valid/Superseded/Revoked/Not Found unambiguously",
+        "Public search exposes only permitted fields",
+        "No grade, student ID, similarity or reviewer data reachable",
+        "p95 verification under 2s, search under 3s"
+      ]
+    },
+    {
+      "id": "T-411",
+      "title": "Staff surfaces: supervisor review queue and registry console",
+      "assignee": "agent_3",
+      "status": "pending",
+      "priority": "P1",
+      "milestone": "M4",
+      "prd_refs": [
+        "4.2",
+        "4.3",
+        "5.1",
+        "11.2"
+      ],
+      "branch": "feat/agent-3/staff-surfaces",
+      "depends_on": [
+        "T-400"
+      ],
+      "acceptance": [
+        "Assigned work, latest versions, contributors, pending actions in one view",
+        "Return-for-revision requires a structured comment",
+        "No affordance to edit a student's file",
+        "Certificate issuance enforces step-up MFA"
+      ]
+    },
+    {
+      "id": "T-412",
+      "title": "Academic Passport and lineage visualisation surfaces",
+      "assignee": "agent_3",
+      "status": "pending",
+      "priority": "P2",
+      "milestone": "M4",
+      "prd_refs": [
+        "6.8",
+        "6.9",
+        "6.11"
+      ],
+      "branch": "feat/agent-3/passport-lineage",
+      "depends_on": [
+        "T-400"
+      ],
+      "acceptance": [
+        "Every claim labelled by evidence source",
+        "Relationships show type and evidence state; suggestions never shown as fact",
+        "No global score or ranking rendered anywhere"
+      ]
     }
   ],
   "roadblocks": [
@@ -995,6 +1085,26 @@
       "detail": "An agent received an out-of-band briefing stating 'Agent 3 = frontend', contradicting coordination_board.json where agent_3 is backend workflow/verification/discovery and agent_4 is frontend. A repo-wide search found no such statement in any committed artifact, so the briefing originated outside version control.",
       "resolution": "Confirmed agent_4 is frontend. The agent had already self-corrected and opened PR #39 under feat/agent-4/* touching only apps/web/src, so no rework was required. Added meta.authority with an explicit precedence order and a role_summary block to the board, and added a CI job that enforces owned_paths so ownership violations fail the build instead of relying on memory.",
       "raised_at": "2026-08-14T01:25:00Z"
+    },
+    {
+      "id": "RB-005",
+      "raised_by": "agent_1",
+      "severity": "high",
+      "status": "resolved",
+      "title": "Ownership gate made registering a global guard impossible, and the roadblock escape hatch was itself blocked",
+      "detail": "agent_1 could not register a global PolicyGuard without editing app.module.ts, main.ts, config/** and infrastructure/database/** — 15 of 29 files fell outside owned_paths. The remedy I documented was 'raise a roadblock in coordination_board.json', but that file is coordinator-only, so following the instruction was itself a violation. agent_1 correctly refused to ship something inert and reported the deadlock instead.",
+      "resolution": "Added shared_paths covering bootstrap, config, database, decorators, pipes, filters and integration tests; the ownership checker now allows them. Added a file-based roadblock procedure (roadblocks/RB-*.md, owned by every agent) so raising a blocker never requires touching the board.",
+      "raised_at": "2026-08-14T01:50:00Z"
+    },
+    {
+      "id": "RB-006",
+      "raised_by": "agent_3",
+      "severity": "high",
+      "status": "resolved",
+      "title": "Board staffing did not match the real team: 3 backend / 1 frontend versus 2 / 2",
+      "detail": "agent_3 flagged that its briefing said frontend while the board said backend. Investigation confirmed the BOARD was wrong: the actual team is two backend, two frontend, one UI/UX and one coordinator. agent_3 declined to build frontend under a backend identity because it would violate owned_paths on every file.",
+      "resolution": "Board v2.0.0 reassigns agent_3 to FRONTEND (public and staff surfaces) with matching owned_paths and three new tasks T-410/411/412. Its former backend tasks T-300..T-305 moved to agent_2. agent_3's analysis was correct on every point.",
+      "raised_at": "2026-08-14T01:50:00Z"
     }
   ],
   "decisions": [
@@ -1045,6 +1155,18 @@
       "title": "File ownership enforced by CI rather than convention",
       "status": "accepted",
       "rationale": "Three simultaneous PRs each modified coordination_board.json, guaranteeing three-way conflicts on a file only agent_5 should touch. Convention did not hold under parallel work. A CI job now maps changed paths to agents[].owned_paths and fails PRs that write outside the author's lane, with the board itself restricted to agent_5."
+    },
+    {
+      "id": "ADR-009",
+      "title": "Shared infrastructure paths and file-based roadblocks",
+      "status": "accepted",
+      "rationale": "Strict per-agent ownership is unsatisfiable for cross-cutting registration: a global guard must be wired into app.module.ts. shared_paths permits minimal additive edits to bootstrap files. Roadblocks move to roadblocks/*.md so reporting a blocker never requires writing to a coordinator-only file."
+    },
+    {
+      "id": "ADR-010",
+      "title": "Secrets via git credential store, never in the remote URL",
+      "status": "accepted",
+      "rationale": "agent_3 correctly objected to embedding the PAT in the remote URL: it writes the token in plaintext into .git/config where it leaks via git remote -v or a pasted log. All agents use a credential helper backed by a chmod 600 file outside the repository. Same authentication, no plaintext in the working tree."
     }
   ],
   "integration_queue": [],
@@ -1091,11 +1213,34 @@
     }
   ],
   "role_summary": {
-    "agent_1": "BACKEND — Identity, Tenancy, Security",
-    "agent_2": "BACKEND — Records, Versions, Storage",
-    "agent_3": "BACKEND — Workflow, Verification, Discovery",
-    "agent_4": "FRONTEND — Web Application",
+    "agent_1": "BACKEND — Identity, Tenancy, Security, Certificates",
+    "agent_2": "BACKEND — Records, Versions, Storage, Workflow, Discovery",
+    "agent_3": "FRONTEND — Public & Staff Surfaces",
+    "agent_4": "FRONTEND — App Shell, Auth, Student Journey",
     "agent_5": "COORDINATOR — Architecture, contracts, review, merge authority",
     "agent_6": "DESIGN — Design System and Accessibility"
+  },
+  "shared_paths": {
+    "note": "Any agent may modify these. Keep changes minimal and additive. Bootstrap wiring, shared config, decorators/pipes/filters, the health module, test configs and global CSS live here because cross-cutting registration cannot be done from inside one agent's tree (ADR-009).",
+    "paths": [
+      "apps/api/src/app.module.ts",
+      "apps/api/src/main.ts",
+      "apps/api/src/config/**",
+      "apps/api/src/infrastructure/database/**",
+      "apps/api/src/interface/decorators/**",
+      "apps/api/src/interface/pipes/**",
+      "apps/api/src/interface/filters/**",
+      "apps/web/src/app/layout.tsx",
+      "apps/*/package.json",
+      "packages/*/package.json",
+      "package.json",
+      "pnpm-lock.yaml",
+      ".env.example",
+      "tests/integration/**",
+      "apps/api/src/modules/health/**",
+      "apps/*/vitest.config.ts",
+      "apps/web/src/app/globals.css",
+      "vitest.integration.config.ts"
+    ]
   }
 }
