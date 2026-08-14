@@ -10,8 +10,57 @@
 
 /* Respect users who ask for reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  z-index: 50;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  border-radius: 0.25rem;
+  background: #1d4ed8;
+  padding: 0.5rem 1rem;
+  color: #fff;
+}
+
+.input {
+  width: 100%;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+}
+.input:focus-visible {
+  border-color: #1d4ed8;
+}
+
+.btn-primary,
+.btn-secondary {
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+}
+.btn-primary {
+  background: #1d4ed8;
+  color: #fff;
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+}
+.btn-secondary {
+  border: 2px solid #e2e8f0;
+  background: #fff;
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
 }
