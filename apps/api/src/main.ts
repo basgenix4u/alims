@@ -2,6 +2,8 @@ import 'reflect-metadata';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { corsOrigins, validateEnv } from './config/env';
@@ -9,8 +11,17 @@ import { ProblemDetailsFilter } from './interface/filters/problem-details.filter
 
 async function bootstrap(): Promise<void> {
   const env = validateEnv(process.env);
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false });
   const logger = new Logger('Bootstrap');
+
+  // Behind a load balancer, req.ip must reflect X-Forwarded-For or every
+  // client looks like the proxy and per-IP rate limiting collapses.
+  // 'loopback, linklocal, uniquelocal' trusts only private hops, so a
+  // client cannot spoof the header from the public internet.
+  app.set('trust proxy', 'loopback, linklocal, uniquelocal');
+
+  // Required to read the httpOnly refresh cookie (contract §1).
+  app.use(cookieParser());
 
   // OWASP A05 — secure headers by default.
   app.use(
