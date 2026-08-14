@@ -23,6 +23,19 @@ BEGIN
 END
 $$;
 
+-- The migration/admin role MUST be able to bypass RLS: it runs DDL,
+-- seeds reference data, and performs break-glass administration. The
+-- RUNTIME role must never bypass RLS. Keeping these separate is the
+-- whole point — if the app ever connects as the owner, PRD 6.1
+-- isolation silently disappears.
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'alims_owner') THEN
+    EXECUTE 'ALTER ROLE alims_owner BYPASSRLS';
+  END IF;
+END
+$$;
+
 GRANT USAGE ON SCHEMA public TO alims_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO alims_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO alims_app;
