@@ -98,6 +98,10 @@ jobs:
           git fetch origin ${{ github.base_ref }} --depth=1
           FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
           echo "Changed files:"; echo "$FILES" | sed 's/^/  /'
+          # OWNERSHIP_BASE_REF lets the checker ignore files that end up
+          # byte-identical to base (touched then reverted, or branch simply
+          # predates a change that landed on base).
+          export OWNERSHIP_BASE_REF="origin/${{ github.base_ref }}"
           # shellcheck disable=SC2086
           python3 scripts/check_ownership.py "${{ github.head_ref }}" $FILES
 
