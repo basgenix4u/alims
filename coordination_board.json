@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "1.0.3",
+  "board_version": "1.1.0",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -12,7 +12,7 @@
     "issue_tracker": "https://github.com/basgenix4u/alims/issues"
   },
   "meta": {
-    "last_updated": "2026-08-14T01:00:00Z",
+    "last_updated": "2026-08-14T00:35:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -170,18 +170,19 @@
       ],
       "merge_authority": true,
       "active_tasks": [
-        "T-002"
+        "T-003"
       ],
       "completed_tasks": [
         "T-000",
-        "T-001"
+        "T-001",
+        "T-002"
       ],
       "notes": "Sole merge authority for main and dev. Owns the DB schema and the API contract."
     },
     {
       "id": "agent_1",
       "role": "Senior Backend Engineer — Identity, Tenancy & Security",
-      "status": "awaiting_scaffold",
+      "status": "ready",
       "specialisation": "Auth, MFA, RBAC policy engine, RLS multi-tenancy, audit chain, OWASP hardening",
       "owned_paths": [
         "apps/api/src/modules/auth/**",
@@ -199,7 +200,7 @@
     {
       "id": "agent_2",
       "role": "Senior Backend Engineer — Records, Versions & Storage",
-      "status": "awaiting_scaffold",
+      "status": "ready",
       "specialisation": "Research Record domain, append-only versioning, S3 presigned resumable uploads, scan pipeline",
       "owned_paths": [
         "apps/api/src/modules/records/**",
@@ -216,7 +217,7 @@
     {
       "id": "agent_3",
       "role": "Senior Backend Engineer — Workflow, Verification & Discovery",
-      "status": "awaiting_scaffold",
+      "status": "ready",
       "specialisation": "Review workflow state machine, similarity advisory, certificates + QR, search & discovery",
       "owned_paths": [
         "apps/api/src/modules/review/**",
@@ -234,7 +235,7 @@
     {
       "id": "agent_4",
       "role": "Senior Frontend Engineer — Web Application",
-      "status": "awaiting_scaffold",
+      "status": "ready",
       "specialisation": "Next.js App Router, TanStack Query, accessible journeys, state management, API integration",
       "owned_paths": [
         "apps/web/src/app/**",
@@ -250,7 +251,7 @@
     {
       "id": "agent_6",
       "role": "UI/UX Designer — Design System & Accessibility",
-      "status": "awaiting_scaffold",
+      "status": "ready",
       "specialisation": "Design tokens, WCAG 2.2 AA, component specs, responsive & low-bandwidth patterns",
       "owned_paths": [
         "packages/ui/**",
@@ -313,7 +314,7 @@
       "id": "T-002",
       "title": "Scaffold monorepo: apps/api, apps/web, apps/worker, packages/*",
       "assignee": "agent_5",
-      "status": "in_progress",
+      "status": "in_review",
       "priority": "P0",
       "milestone": "M0",
       "prd_refs": [],
@@ -358,7 +359,7 @@
       "id": "T-100",
       "title": "Auth: register, login, refresh rotation with reuse detection, logout",
       "assignee": "agent_1",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M1",
       "prd_refs": [
@@ -403,7 +404,7 @@
       "id": "T-102",
       "title": "Central policy engine + PolicyGuard (deny-by-default)",
       "assignee": "agent_1",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M1",
       "prd_refs": [
@@ -497,7 +498,7 @@
       "id": "T-200",
       "title": "Research Record CRUD, draft save, field validation",
       "assignee": "agent_2",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M2",
       "prd_refs": [
@@ -736,7 +737,7 @@
       "id": "T-400",
       "title": "Frontend app shell, routing, i18n scaffolding, API client",
       "assignee": "agent_4",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M4",
       "prd_refs": [
@@ -861,7 +862,7 @@
       "id": "T-600",
       "title": "Design tokens, colour system, typography — WCAG 2.2 AA verified",
       "assignee": "agent_6",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M5",
       "prd_refs": [
@@ -941,7 +942,7 @@
       "id": "RB-002",
       "raised_by": "agent_5",
       "severity": "medium",
-      "status": "mitigated",
+      "status": "resolved",
       "title": "GitHub branch protection unavailable on private repo without GitHub Pro",
       "detail": "PUT /repos/basgenix4u/alims/branches/{main,dev}/protection returned HTTP 403: 'Upgrade to GitHub Pro or make this repository public to enable this feature.' This is an account plan limit, not a token scope limit. The PAT holds full repo scope.",
       "mitigation": "Compensating controls applied in CI: (1) .github/workflows/branch-guard.yml fails any push to main/dev by an actor other than basgenix4u; (2) enforces branch naming and task-ID references on PRs; (3) CODEOWNERS routes every path to @basgenix4u; (4) secret-scan job blocks credential patterns. Native protection can be enabled instantly if the repo goes public or the plan is upgraded.",
@@ -950,13 +951,14 @@
         "Make the repository public (native protection becomes free)",
         "Continue with CI-based compensating controls (currently active)"
       ],
-      "raised_at": "2026-08-14T00:35:00Z"
+      "raised_at": "2026-08-14T00:35:00Z",
+      "resolution": "Owner made the repository public on 2026-08-14. Native branch protection applied to main and dev: force-push blocked, deletion blocked, PR required, CODEOWNERS review required, status checks enforced."
     },
     {
       "id": "RB-003",
       "raised_by": "agent_5",
       "severity": "medium",
-      "status": "open_needs_owner_action",
+      "status": "resolved",
       "title": "GitHub Actions jobs fail immediately — 0 steps executed, no runner assigned",
       "detail": "All Branch Guard jobs on main and dev complete in ~2s with conclusion=failure, steps=0 and an empty runner_name. Logs return BlobNotFound because no job ever started. Actions is enabled (allowed_actions=all) and the workflow YAML is valid. This signature indicates GitHub-hosted runner minutes are exhausted or a billing/spending-limit block applies to private-repository Actions usage. It is NOT a workflow logic error and NOT a token scope error.",
       "evidence": "run 31756776013: status=completed conclusion=failure started=00:16:06Z completed=00:16:08Z steps=0 runner_name=''",
@@ -969,7 +971,8 @@
         "Continue with the local pre-push hook, which is already active and sufficient for development"
       ],
       "blocks_development": false,
-      "raised_at": "2026-08-14T01:00:00Z"
+      "raised_at": "2026-08-14T01:00:00Z",
+      "resolution": "Public repositories get unlimited GitHub Actions minutes. The runner block no longer applies. Workflows will execute on the next PR."
     }
   ],
   "decisions": [
@@ -1002,6 +1005,12 @@
       "title": "CI-enforced branch protection in place of native GitHub protection",
       "status": "accepted",
       "rationale": "Native protection requires GitHub Pro for private repositories. A branch-guard workflow plus CODEOWNERS provides equivalent day-to-day enforcement of the sole-merge-authority rule without changing repository visibility or incurring cost."
+    },
+    {
+      "id": "ADR-006",
+      "title": "Repository made public; native branch protection replaces CI-only enforcement",
+      "status": "accepted",
+      "rationale": "Public visibility unlocks free unlimited Actions minutes and native branch protection on main and dev, resolving RB-002 and RB-003 together. The pre-push hook remains as defence in depth. Verified before flipping visibility that the PAT value appears in no file and no commit in any revision."
     }
   ],
   "integration_queue": [],
