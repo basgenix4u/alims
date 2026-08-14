@@ -59,11 +59,16 @@ jobs:
       - name: Fail on credential patterns
         run: |
           set +e
-          PATTERN='ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}'
+          # Fragments concatenated at runtime so this workflow never matches itself.
+          P1="gh""p_[A-Za-z0-9]{20,}"
+          P2="github""_pat_[A-Za-z0-9_]{20,}"
+          P3="-----BEGIN [A-Z ]*PRIVATE KEY-----"
+          P4="AK""IA[0-9A-Z]{16}"
+          PATTERN="$P1|$P2|$P3|$P4"
           MATCHES=$(grep -rInE "$PATTERN" --exclude-dir=.git --exclude-dir=node_modules . )
           if [ -n "$MATCHES" ]; then
             echo "::error::Potential secret committed. Rotate it immediately."
-            echo "$MATCHES" | sed -E 's/(ghp_|github_pat_)[A-Za-z0-9_]+/\1***REDACTED***/g'
+            echo "$MATCHES" | sed -E "s/(gh""p_|github""_pat_)[A-Za-z0-9_]+/\1***REDACTED***/g"
             exit 1
           fi
           echo "No credential patterns found."
