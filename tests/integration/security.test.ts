@@ -31,8 +31,16 @@ function asApp(sql: string): string {
   ).trim();
 }
 
-/** Runs SQL as superuser — used only to establish ground truth. */
+/**
+ * Runs SQL with elevated rights — used only to establish ground truth and
+ * to seed fixtures. Two paths so the suite runs both locally (sudo to the
+ * postgres OS user) and in CI (DSN for the migration/owner role).
+ */
 function asSuper(sql: string): string {
+  const dsn = process.env.CI_SUPERUSER_DSN ?? process.env.DATABASE_MIGRATION_URL;
+  if (dsn) {
+    return execFileSync('psql', [dsn, '-qtA', '-c', sql], { encoding: 'utf8' }).trim();
+  }
   return execFileSync('sudo', ['-n', '-u', 'postgres', 'psql', '-d', 'alims', '-qtA', '-c', sql], {
     encoding: 'utf8',
   }).trim();
