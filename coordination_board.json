@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "1.1.0",
+  "board_version": "1.1.1",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -12,7 +12,7 @@
     "issue_tracker": "https://github.com/basgenix4u/alims/issues"
   },
   "meta": {
-    "last_updated": "2026-08-14T00:35:00Z",
+    "last_updated": "2026-08-14T00:45:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -314,7 +314,7 @@
       "id": "T-002",
       "title": "Scaffold monorepo: apps/api, apps/web, apps/worker, packages/*",
       "assignee": "agent_5",
-      "status": "in_review",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M0",
       "prd_refs": [],
@@ -334,7 +334,7 @@
       "id": "T-003",
       "title": "Author Prisma schema for Release 1 + RLS migration",
       "assignee": "agent_5",
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P0",
       "milestone": "M0",
       "prd_refs": [
@@ -1014,5 +1014,26 @@
     }
   ],
   "integration_queue": [],
-  "merge_log": []
+  "merge_log": [
+    {
+      "pr": 27,
+      "task": "T-002",
+      "branch": "chore/agent-5/monorepo-scaffold",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "Monorepo scaffold: 5 packages, 26 tests, health endpoint verified live."
+    },
+    {
+      "pr": 28,
+      "task": "T-002",
+      "branch": "dev",
+      "into": "main",
+      "merged_by": "agent_5",
+      "method": "merge",
+      "ci": "green",
+      "summary": "M0 foundation promoted to main."
+    }
+  ]
 }
