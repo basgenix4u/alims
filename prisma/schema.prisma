@@ -1,9 +1,17 @@
-// ALIMS database schema.
+// ALIMS — Release 1 + Release 2 core schema
 //
-// Baseline only. The full Release 1 model lands in T-003 per
-// docs/ARCHITECTURE.md §4. Agents 1-3 must not edit this file directly:
-// schema changes are requested via a roadblock in coordination_board.json
-// so that migrations stay serialised and conflict-free.
+// Source of truth: docs/PRD.md · Design: docs/ARCHITECTURE.md §4
+// Contract: api_specification.md
+//
+// OWNERSHIP: Agent 5 only. Agents 1-3 must NOT edit this file directly —
+// request changes via a roadblock in coordination_board.json so migrations
+// stay serialised and conflict-free.
+//
+// Deliberate absences, required by the PRD:
+//   - no contribution_score      (§6.7 "must not generate a single contribution score")
+//   - no researcher_quality      (§6.8 "must not present an opaque global score")
+//   - no integrity_percentage    (§1.5.3 "No integrity score")
+// These columns do not exist so the values are unrepresentable.
 
 generator client {
   provider = "prisma-client-js"
@@ -15,25 +23,918 @@ datasource db {
   directUrl = env("DATABASE_MIGRATION_URL")
 }
 
-/// Tamper-evident audit trail (PRD §9.1).
-/// Rows are append-only; UPDATE and DELETE are rejected by trigger in T-104.
-/// `hash` chains to `prevHash` so any retro-edit breaks the chain.
-model AuditEvent {
-  id          String   @id @default(uuid()) @db.Uuid
-  seq         BigInt   @default(autoincrement())
-  actorUserId String?  @db.Uuid
-  action      String   @db.VarChar(120)
-  subjectType String   @db.VarChar(60)
-  subjectId   String?  @db.Uuid
-  payload     Json     @default("{}")
-  ipHash      String?  @db.VarChar(64)
-  prevHash    String?  @db.VarChar(64)
-  hash        String   @db.VarChar(64)
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+// ─────────────────────────────────────────────────────────────
+// ENUMS — mirror packages/contracts/src/enums.ts exactly
+// ─────────────────────────────────────────────────────────────
 
-  @@unique([seq])
+enum InstitutionStatus {
+  pending_verification
+  verified
+  suspended
+  archived
+
+  @@map("institution_status")
+}
+
+enum InstitutionCategory {
+  university
+  polytechnic
+  college
+  research_institute
+  other
+
+  @@map("institution_category")
+}
+
+enum DepartmentStatus {
+  active
+  merged
+  renamed
+  archived
+
+  @@map("department_status")
+}
+
+enum MemberRole {
+  student
+  supervisor
+  dept_admin
+  examiner
+  registry
+  librarian
+  inst_admin
+
+  @@map("member_role")
+}
+
+enum MembershipStatus {
+  active
+  pending
+  revoked
+
+  @@map("membership_status")
+}
+
+enum IdentityLevel {
+  unverified
+  email
+  identity_verified
+
+  @@map("identity_level")
+}
+
+enum OutputType {
+  project
+  thesis
+  dissertation
+  article
+  report
+  dataset
+  software
+  preprint
+  patent_disclosure
+  presentation
+  other
+
+  @@map("output_type")
+}
+
+/// PRD §7.1 Research Record lifecycle.
+enum RecordStatus {
+  draft
+  submitted
+  in_review
+  returned_for_revision
+  resubmitted
+  institutionally_verified
+  published
+  superseded
+  withdrawn
+  under_dispute
+  verification_revoked
+
+  @@map("record_status")
+}
+
+/// PRD §6.4 — ten visibly distinct labels.
+enum VerificationLevel {
+  draft
+  submitted
+  identity_verified_deposit
+  self_published
+  supervisor_verified
+  institutionally_verified
+  journal_verified
+  under_dispute
+  withdrawn
+  verification_revoked
+
+  @@map("verification_level")
+}
+
+enum AccessLevel {
+  metadata_public
+  abstract_public
+  full_public
+  institution_only
+  restricted
+
+  @@map("access_level")
+}
+
+enum VersionState {
+  draft
+  submitted
+  returned
+  approved
+  superseded
+  withdrawn
+
+  @@map("version_state")
+}
+
+enum ScanStatus {
+  pending
+  clean
+  infected
+  unsupported
+  failed
+
+  @@map("scan_status")
+}
+
+enum Provenance {
+  native
+  historical_digitisation
+  imported
+
+  @@map("provenance")
+}
+
+enum CompletionState {
+  complete
+  incomplete_seeking_continuation
+
+  @@map("completion_state")
+}
+
+enum IncompleteReason {
+  funding_ended
+  graduation
+  equipment_unavailable
+  dataset_unavailable
+  supervisor_change
+  time_constraint
+  other
+
+  @@map("incomplete_reason")
+}
+
+enum MetadataSource {
+  self_declared
+  institution_verified
+  journal_linked
+  imported
+
+  @@map("metadata_source")
+}
+
+enum TaskStatus {
+  pending
+  completed
+  reassigned
+  escalated
+
+  @@map("task_status")
+}
+
+enum ReviewDecisionType {
+  approve
+  return_for_revision
+  request_contribution_correction
+  escalate_integrity
+
+  @@map("review_decision_type")
+}
+
+enum CertificateStatus {
+  valid
+  superseded
+  revoked
+
+  @@map("certificate_status")
+}
+
+/// PRD §6.5 — advisory statuses. Never mutate record status.
+enum SimilarityStatus {
+  not_requested
+  pending
+  completed
+  provider_delayed
+  review_required
+  reviewed
+  unavailable
+
+  @@map("similarity_status")
+}
+
+/// PRD §6.5 — a human must choose one of these.
+enum IntegrityOutcome {
+  no_issue
+  citation_correction_required
+  attribution_correction_required
+  escalated
+  inconclusive
+
+  @@map("integrity_outcome")
+}
+
+/// NISO CRediT — exactly 14 roles (PRD §6.7).
+enum CreditRole {
+  conceptualization
+  data_curation
+  formal_analysis
+  funding_acquisition
+  investigation
+  methodology
+  project_administration
+  resources
+  software
+  supervision
+  validation
+  visualization
+  writing_original_draft
+  writing_review_editing
+
+  @@map("credit_role")
+}
+
+enum ContributionLevel {
+  lead
+  equal
+  supporting
+
+  @@map("contribution_level")
+}
+
+enum AckStatus {
+  pending
+  acknowledged
+  correction_requested
+  disputed
+  no_response
+
+  @@map("ack_status")
+}
+
+/// PRD §6.9 — every relationship carries its evidence state.
+enum EvidenceState {
+  self_declared
+  verified
+  externally_imported
+  machine_suggested
+  accepted
+  disputed
+  rejected
+
+  @@map("evidence_state")
+}
+
+enum RelationshipType {
+  supervised_by
+  co_supervised_by
+  contributed_to
+  affiliated_with
+  cites
+  builds_on
+  extends
+  challenges
+  replicates
+  uses_dataset
+  produces_dataset
+  published_as
+  continues
+  collaborates_on
+  funded_by
+  resulted_in
+  adopted_by
+  licensed_to
+
+  @@map("relationship_type")
+}
+
+enum AccessRequestStatus {
+  pending
+  approved
+  declined
+  info_requested
+  ignored
+
+  @@map("access_request_status")
+}
+
+enum DisputeCategory {
+  incorrect_metadata
+  authorship_contribution
+  false_institution_claim
+  duplicate_provenance
+  copyright_rights
+  privacy_confidentiality
+  offensive_unsafe_content
+  certificate_verification_error
+  relationship_lineage_error
+
+  @@map("dispute_category")
+}
+
+enum DisputeStatus {
+  submitted
+  triage
+  evidence_requested
+  under_review
+  resolved
+  dismissed
+  escalated
+
+  @@map("dispute_status")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TENANCY & IDENTITY
+// ─────────────────────────────────────────────────────────────
+
+/// PRD §6.1. Only `verified` institutions may issue Institutionally
+/// Verified status or certificates — enforced in the domain layer.
+model Institution {
+  id                  String              @id @default(uuid()) @db.Uuid
+  legalName           String              @map("legal_name") @db.VarChar(300)
+  displayName         String              @map("display_name") @db.VarChar(200)
+  slug                String              @unique @db.VarChar(120)
+  countryCode         String              @map("country_code") @db.Char(2)
+  category            InstitutionCategory
+  officialDomain      String              @map("official_domain") @db.VarChar(253)
+  status              InstitutionStatus   @default(pending_verification)
+  representativeEmail String              @map("representative_email") @db.VarChar(320)
+  privacyContactEmail String              @map("privacy_contact_email") @db.VarChar(320)
+  academicEmail       String?             @map("academic_email") @db.VarChar(320)
+  libraryEmail        String?             @map("library_email") @db.VarChar(320)
+  branding            Json                @default("{}")
+  policies            Json                @default("{}")
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  nameHistory InstitutionNameHistory[]
+  departments Department[]
+  programmes  Programme[]
+  sessions    AcademicSession[]
+  memberships Membership[]
+  records     ResearchRecord[]
+  templates   WorkflowTemplate[]
+
+  @@index([status])
+  @@index([countryCode])
+  @@map("institution")
+}
+
+/// PRD §6.1 edge case: historical records keep the historical name.
+model InstitutionNameHistory {
+  id            String      @id @default(uuid()) @db.Uuid
+  institutionId String      @map("institution_id") @db.Uuid
+  previousName  String      @map("previous_name") @db.VarChar(300)
+  changedAt     DateTime    @default(now()) @map("changed_at") @db.Timestamptz(6)
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId])
+  @@map("institution_name_history")
+}
+
+/// PRD §6.1: merged/renamed departments keep history accurate.
+model Department {
+  id            String           @id @default(uuid()) @db.Uuid
+  institutionId String           @map("institution_id") @db.Uuid
+  name          String           @db.VarChar(200)
+  code          String?          @db.VarChar(40)
+  parentId      String?          @map("parent_id") @db.Uuid
+  status        DepartmentStatus @default(active)
+  mergedIntoId  String?          @map("merged_into_id") @db.Uuid
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  institution Institution      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  parent      Department?      @relation("DeptTree", fields: [parentId], references: [id])
+  children    Department[]     @relation("DeptTree")
+  mergedInto  Department?      @relation("DeptMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom  Department[]     @relation("DeptMerge")
+  programmes  Programme[]
+  memberships Membership[]
+  records     ResearchRecord[]
+
+  @@unique([institutionId, name])
+  @@index([institutionId, status])
+  @@map("department")
+}
+
+model Programme {
+  id            String   @id @default(uuid()) @db.Uuid
+  institutionId String   @map("institution_id") @db.Uuid
+  departmentId  String   @map("department_id") @db.Uuid
+  name          String   @db.VarChar(200)
+  degreeType    String   @map("degree_type") @db.VarChar(80)
+  durationYears Int?     @map("duration_years")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  institution Institution      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  department  Department       @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+  records     ResearchRecord[]
+
+  @@unique([departmentId, name])
+  @@index([institutionId])
+  @@map("programme")
+}
+
+model AcademicSession {
+  id            String   @id @default(uuid()) @db.Uuid
+  institutionId String   @map("institution_id") @db.Uuid
+  label         String   @db.VarChar(60)
+  startsOn      DateTime @map("starts_on") @db.Date
+  endsOn        DateTime @map("ends_on") @db.Date
+  isCurrent     Boolean  @default(false) @map("is_current")
+
+  institution Institution      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  records     ResearchRecord[]
+
+  @@unique([institutionId, label])
+  @@map("academic_session")
+}
+
+/// Legal name and MFA secret are encrypted at rest (AES-256-GCM).
+/// PRD §8: a user may change display name while legal/audit identity is
+/// preserved privately.
+model UserAccount {
+  id                  String        @id @default(uuid()) @db.Uuid
+  email               String        @unique @db.VarChar(320)
+  passwordHash        String        @map("password_hash") @db.VarChar(255)
+  displayName         String        @map("display_name") @db.VarChar(150)
+  legalNameEncrypted  String?       @map("legal_name_encrypted") @db.Text
+  identityLevel       IdentityLevel @default(unverified) @map("identity_level")
+  mfaSecretEncrypted  String?       @map("mfa_secret_encrypted") @db.Text
+  mfaEnabled          Boolean       @default(false) @map("mfa_enabled")
+  locale              String        @default("en") @db.VarChar(10)
+  isActive            Boolean       @default(true) @map("is_active")
+  failedLoginAttempts Int           @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?     @map("locked_until") @db.Timestamptz(6)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  nameHistory       UserNameHistory[]
+  memberships       Membership[]
+  ownedRecords      ResearchRecord[]  @relation("RecordOwner")
+  submittedVersions RecordVersion[]   @relation("VersionSubmitter")
+  reviewTasks       ReviewTask[]
+  reviewDecisions   ReviewDecision[]
+  contributions     Contributor[]
+  passport          PassportProfile?
+  refreshTokens     RefreshToken[]
+  accessRequests    AccessRequest[]
+  disputes          Dispute[]
+
+  @@index([email])
+  @@map("user_account")
+}
+
+model UserNameHistory {
+  id                  String      @id @default(uuid()) @db.Uuid
+  userId              String      @map("user_id") @db.Uuid
+  previousDisplayName String      @map("previous_display_name") @db.VarChar(150)
+  changedAt           DateTime    @default(now()) @map("changed_at") @db.Timestamptz(6)
+  user                UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_name_history")
+}
+
+/// Rotating refresh tokens with family-based reuse detection (§9.1).
+model RefreshToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  familyId   String    @map("family_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash") @db.VarChar(128)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_token")
+}
+
+model Membership {
+  id            String           @id @default(uuid()) @db.Uuid
+  userId        String           @map("user_id") @db.Uuid
+  institutionId String           @map("institution_id") @db.Uuid
+  departmentId  String?          @map("department_id") @db.Uuid
+  programmeId   String?          @map("programme_id") @db.Uuid
+  role          MemberRole
+  status        MembershipStatus @default(pending)
+  startsOn      DateTime?        @map("starts_on") @db.Date
+  endsOn        DateTime?        @map("ends_on") @db.Date
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user        UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  department  Department? @relation(fields: [departmentId], references: [id])
+  programme   Programme?  @relation(fields: [programmeId], references: [id])
+
+  @@unique([userId, institutionId, role])
+  @@index([institutionId, role, status])
+  @@map("membership")
+}
+
+// ─────────────────────────────────────────────────────────────
+// RESEARCH RECORDS & VERSIONS
+// ─────────────────────────────────────────────────────────────
+
+/// PRD §6.2. Field limits are enforced in the domain layer and mirrored
+/// in packages/contracts; DB lengths are the outer bound.
+model ResearchRecord {
+  id                String            @id @default(uuid()) @db.Uuid
+  nxrId             String?           @unique @map("nxr_id") @db.VarChar(40)
+  institutionId     String?           @map("institution_id") @db.Uuid
+  departmentId      String?           @map("department_id") @db.Uuid
+  programmeId       String?           @map("programme_id") @db.Uuid
+  sessionId         String?           @map("session_id") @db.Uuid
+  ownerUserId       String            @map("owner_user_id") @db.Uuid
+  outputType        OutputType        @map("output_type")
+  title             String            @db.VarChar(500)
+  abstract          String?           @db.Text
+  disciplines       String[]
+  keywords          String[]
+  researchYear      Int?              @map("research_year")
+  accessLevel       AccessLevel       @default(metadata_public) @map("access_level")
+  licence           String            @db.VarChar(120)
+  status            RecordStatus      @default(draft)
+  verificationLevel VerificationLevel @default(draft) @map("verification_level")
+  provenance        Provenance        @default(native)
+  completionState   CompletionState   @default(complete) @map("completion_state")
+  incompleteReason  IncompleteReason? @map("incomplete_reason")
+  embargoUntil      DateTime?         @map("embargo_until") @db.Timestamptz(6)
+  researchQuestion  String?           @map("research_question") @db.Text
+  methodology       String?           @db.Text
+  fundingSource     String?           @map("funding_source") @db.VarChar(500)
+  ethicsApprovalRef String?           @map("ethics_approval_ref") @db.VarChar(200)
+  datasetLinks      String[]          @map("dataset_links")
+  codeLinks         String[]          @map("code_links")
+  languages         String[]
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  institution        Institution?               @relation(fields: [institutionId], references: [id])
+  department         Department?                @relation(fields: [departmentId], references: [id])
+  programme          Programme?                 @relation(fields: [programmeId], references: [id])
+  session            AcademicSession?           @relation(fields: [sessionId], references: [id])
+  owner              UserAccount                @relation("RecordOwner", fields: [ownerUserId], references: [id])
+  versions           RecordVersion[]
+  metadataProvenance RecordMetadataProvenance[]
+  contributors       Contributor[]
+  workflowInstance   WorkflowInstance?
+  certificates       Certificate[]
+  accessRequests     AccessRequest[]
+
+  @@index([institutionId, status])
+  @@index([ownerUserId])
+  @@index([status, verificationLevel])
+  @@index([accessLevel])
+  @@index([researchYear])
+  @@map("research_record")
+}
+
+/// PRD §6.3 + §11.2: a submitted or approved version is NEVER overwritten.
+/// Enforced by a database trigger, not by application discipline.
+model RecordVersion {
+  id            String       @id @default(uuid()) @db.Uuid
+  recordId      String       @map("record_id") @db.Uuid
+  versionNo     Int          @map("version_no")
+  changeSummary String       @map("change_summary") @db.VarChar(1000)
+  state         VersionState @default(draft)
+  fileKey       String?      @map("file_key") @db.VarChar(500)
+  fileName      String?      @map("file_name") @db.VarChar(300)
+  fileSizeBytes BigInt?      @map("file_size_bytes")
+  mimeType      String?      @map("mime_type") @db.VarChar(150)
+  sha256        String?      @db.Char(64)
+  scanStatus    ScanStatus   @default(pending) @map("scan_status")
+  submittedById String?      @map("submitted_by_id") @db.Uuid
+  submittedAt   DateTime?    @map("submitted_at") @db.Timestamptz(6)
+  isImmutable   Boolean      @default(false) @map("is_immutable")
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  record      ResearchRecord        @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  submittedBy UserAccount?          @relation("VersionSubmitter", fields: [submittedById], references: [id])
+  reviewTasks ReviewTask[]
+  decisions   ReviewDecision[]
+  similarity  SimilarityAssessment?
+  certificate Certificate?
+
+  @@unique([recordId, versionNo])
+  @@index([recordId, state])
+  @@index([sha256])
+  @@map("record_version")
+}
+
+/// PRD §9.5: records must show how each metadata value was obtained.
+model RecordMetadataProvenance {
+  id         String         @id @default(uuid()) @db.Uuid
+  recordId   String         @map("record_id") @db.Uuid
+  fieldName  String         @map("field_name") @db.VarChar(80)
+  source     MetadataSource
+  confidence Decimal?       @db.Decimal(3, 2)
+  note       String?        @db.VarChar(500)
+
+  record ResearchRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@unique([recordId, fieldName])
+  @@map("record_metadata_provenance")
+}
+
+// ─────────────────────────────────────────────────────────────
+// WORKFLOW, VERIFICATION, CERTIFICATES
+// ─────────────────────────────────────────────────────────────
+
+model WorkflowTemplate {
+  id            String     @id @default(uuid()) @db.Uuid
+  institutionId String     @map("institution_id") @db.Uuid
+  name          String     @db.VarChar(200)
+  outputType    OutputType @map("output_type")
+  stages        Json
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  institution Institution        @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  instances   WorkflowInstance[]
+
+  @@unique([institutionId, name])
+  @@map("workflow_template")
+}
+
+model WorkflowInstance {
+  id           String    @id @default(uuid()) @db.Uuid
+  recordId     String    @unique @map("record_id") @db.Uuid
+  templateId   String    @map("template_id") @db.Uuid
+  currentStage String    @map("current_stage") @db.VarChar(80)
+  isComplete   Boolean   @default(false) @map("is_complete")
+  dueAt        DateTime? @map("due_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  record   ResearchRecord   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  template WorkflowTemplate @relation(fields: [templateId], references: [id])
+  tasks    ReviewTask[]
+
+  @@map("workflow_instance")
+}
+
+model ReviewTask {
+  id                 String     @id @default(uuid()) @db.Uuid
+  workflowInstanceId String     @map("workflow_instance_id") @db.Uuid
+  versionId          String     @map("version_id") @db.Uuid
+  assigneeUserId     String     @map("assignee_user_id") @db.Uuid
+  stage              String     @db.VarChar(80)
+  status             TaskStatus @default(pending)
+  dueAt              DateTime?  @map("due_at") @db.Timestamptz(6)
+  reminderCount      Int        @default(0) @map("reminder_count")
+  completedAt        DateTime?  @map("completed_at") @db.Timestamptz(6)
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workflowInstance WorkflowInstance @relation(fields: [workflowInstanceId], references: [id], onDelete: Cascade)
+  version          RecordVersion    @relation(fields: [versionId], references: [id])
+  assignee         UserAccount      @relation(fields: [assigneeUserId], references: [id])
+  decisions        ReviewDecision[]
+
+  @@index([assigneeUserId, status])
+  @@index([workflowInstanceId])
+  @@map("review_task")
+}
+
+/// Append-only. A decision is historical fact and is never edited.
+model ReviewDecision {
+  id              String             @id @default(uuid()) @db.Uuid
+  taskId          String             @map("task_id") @db.Uuid
+  reviewerUserId  String             @map("reviewer_user_id") @db.Uuid
+  versionId       String             @map("version_id") @db.Uuid
+  decision        ReviewDecisionType
+  comment         String             @db.Text
+  requiredActions String[]           @map("required_actions")
+  decidedAt       DateTime           @default(now()) @map("decided_at") @db.Timestamptz(6)
+
+  task     ReviewTask    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reviewer UserAccount   @relation(fields: [reviewerUserId], references: [id])
+  version  RecordVersion @relation(fields: [versionId], references: [id])
+
+  @@index([versionId])
+  @@map("review_decision")
+}
+
+/// PRD §6.5 + ADR-004. This table is the similarity subsystem's ONLY
+/// write target. It has no foreign-key path that can mutate record status.
+/// A transition requires a human IntegrityReview.
+model SimilarityAssessment {
+  id          String           @id @default(uuid()) @db.Uuid
+  versionId   String           @unique @map("version_id") @db.Uuid
+  provider    String           @db.VarChar(80)
+  status      SimilarityStatus @default(not_requested)
+  score       Decimal?         @db.Decimal(5, 2)
+  reportKey   String?          @map("report_key") @db.VarChar(500)
+  requestedAt DateTime?        @map("requested_at") @db.Timestamptz(6)
+  completedAt DateTime?        @map("completed_at") @db.Timestamptz(6)
+
+  version RecordVersion     @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  reviews IntegrityReview[]
+
+  @@map("similarity_assessment")
+}
+
+/// PRD §6.5: a human must choose an outcome and give a reason.
+model IntegrityReview {
+  id             String           @id @default(uuid()) @db.Uuid
+  assessmentId   String           @map("assessment_id") @db.Uuid
+  reviewerUserId String           @map("reviewer_user_id") @db.Uuid
+  outcome        IntegrityOutcome
+  reason         String           @db.Text
+  decidedAt      DateTime         @default(now()) @map("decided_at") @db.Timestamptz(6)
+
+  assessment SimilarityAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+  @@map("integrity_review")
+}
+
+/// PRD §6.4 + §7.2. Bound to a specific VERSION, never to a record.
+model Certificate {
+  id             String            @id @default(uuid()) @db.Uuid
+  recordId       String            @map("record_id") @db.Uuid
+  versionId      String            @unique @map("version_id") @db.Uuid
+  certificateNo  String            @unique @map("certificate_no") @db.VarChar(60)
+  nxrId          String            @map("nxr_id") @db.VarChar(40)
+  qrToken        String            @unique @map("qr_token") @db.VarChar(64)
+  status         CertificateStatus @default(valid)
+  issuedById     String            @map("issued_by_id") @db.Uuid
+  issuedAt       DateTime          @default(now()) @map("issued_at") @db.Timestamptz(6)
+  supersededById String?           @map("superseded_by_id") @db.Uuid
+  revokedReason  String?           @map("revoked_reason") @db.Text
+  revokedAt      DateTime?         @map("revoked_at") @db.Timestamptz(6)
+
+  record       ResearchRecord @relation(fields: [recordId], references: [id])
+  version      RecordVersion  @relation(fields: [versionId], references: [id])
+  supersededBy Certificate?   @relation("CertSupersede", fields: [supersededById], references: [id])
+  supersedes   Certificate[]  @relation("CertSupersede")
+
+  @@index([recordId])
+  @@index([status])
+  @@map("certificate")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONTRIBUTION, PASSPORT, LINEAGE
+// ─────────────────────────────────────────────────────────────
+
+/// PRD §6.7. NOTE the deliberate absence of any score column.
+/// Supervision is a flag, never inferred authorship.
+model Contributor {
+  id            String            @id @default(uuid()) @db.Uuid
+  recordId      String            @map("record_id") @db.Uuid
+  userId        String?           @map("user_id") @db.Uuid
+  externalName  String?           @map("external_name") @db.VarChar(200)
+  externalOrcid String?           @map("external_orcid") @db.VarChar(30)
+  creditRoles   CreditRole[]      @map("credit_roles")
+  level         ContributionLevel
+  isSupervision Boolean           @default(false) @map("is_supervision")
+  evidenceNote  String?           @map("evidence_note") @db.Text
+  ackStatus     AckStatus         @default(pending) @map("ack_status")
+  disputeReason String?           @map("dispute_reason") @db.Text
+  invitedAt     DateTime          @default(now()) @map("invited_at") @db.Timestamptz(6)
+  respondedAt   DateTime?         @map("responded_at") @db.Timestamptz(6)
+
+  record ResearchRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  user   UserAccount?   @relation(fields: [userId], references: [id])
+
+  @@unique([recordId, userId])
+  @@index([userId, ackStatus])
+  @@map("contributor")
+}
+
+/// PRD §6.8. NOTE the deliberate absence of any global score column.
+model PassportProfile {
+  id                        String   @id @default(uuid()) @db.Uuid
+  userId                    String   @unique @map("user_id") @db.Uuid
+  handle                    String?  @unique @db.VarChar(80)
+  headline                  String?  @db.VarChar(300)
+  orcid                     String?  @db.VarChar(30)
+  interests                 String[]
+  methods                   String[]
+  skills                    String[]
+  availableForCollaboration Boolean  @default(false) @map("available_for_collaboration")
+  sectionVisibility         Json     @default("{}") @map("section_visibility")
+  isPublic                  Boolean  @default(false) @map("is_public")
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("passport_profile")
+}
+
+/// PRD §6.9. Polymorphic edge with a mandatory evidence state so a
+/// machine suggestion can never be displayed as established fact.
+model Relationship {
+  id            String           @id @default(uuid()) @db.Uuid
+  fromType      String           @map("from_type") @db.VarChar(40)
+  fromId        String           @map("from_id") @db.Uuid
+  toType        String           @map("to_type") @db.VarChar(40)
+  toId          String           @map("to_id") @db.Uuid
+  relType       RelationshipType @map("rel_type")
+  evidenceState EvidenceState    @map("evidence_state")
+  confidence    Decimal?         @db.Decimal(3, 2)
+  explanation   String?          @db.Text
+  createdById   String?          @map("created_by_id") @db.Uuid
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([fromType, fromId, toType, toId, relType])
+  @@index([fromType, fromId])
+  @@index([toType, toId])
+  @@index([evidenceState])
+  @@map("relationship")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ACCESS & DISPUTES
+// ─────────────────────────────────────────────────────────────
+
+/// PRD §6.6: requester never receives private contact information.
+model AccessRequest {
+  id              String              @id @default(uuid()) @db.Uuid
+  recordId        String              @map("record_id") @db.Uuid
+  requesterUserId String              @map("requester_user_id") @db.Uuid
+  purpose         String              @db.Text
+  organisation    String              @db.VarChar(300)
+  requesterRole   String?             @map("requester_role") @db.VarChar(120)
+  status          AccessRequestStatus @default(pending)
+  decidedById     String?             @map("decided_by_id") @db.Uuid
+  decidedAt       DateTime?           @map("decided_at") @db.Timestamptz(6)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  record    ResearchRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  requester UserAccount    @relation(fields: [requesterUserId], references: [id])
+
+  @@index([recordId, status])
+  @@map("access_request")
+}
+
+/// PRD §7.3. ALIMS records workflow status; it does not adjudicate.
+model Dispute {
+  id           String          @id @default(uuid()) @db.Uuid
+  subjectType  String          @map("subject_type") @db.VarChar(40)
+  subjectId    String          @map("subject_id") @db.Uuid
+  category     DisputeCategory
+  description  String          @db.Text
+  status       DisputeStatus   @default(submitted)
+  raisedById   String          @map("raised_by_id") @db.Uuid
+  assignedToId String?         @map("assigned_to_id") @db.Uuid
+  resolution   String?         @db.Text
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  raisedBy UserAccount @relation(fields: [raisedById], references: [id])
+
+  @@index([subjectType, subjectId])
+  @@index([status])
+  @@map("dispute")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUDIT (PRD §9.1)
+// ─────────────────────────────────────────────────────────────
+
+/// Tamper-evident hash chain. UPDATE and DELETE are rejected by trigger.
+/// hash = sha256(seq‖actor‖action‖subject‖payload‖prev_hash)
+model AuditEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  seq           BigInt   @unique @default(autoincrement())
+  institutionId String?  @map("institution_id") @db.Uuid
+  actorUserId   String?  @map("actor_user_id") @db.Uuid
+  action        String   @db.VarChar(120)
+  subjectType   String   @map("subject_type") @db.VarChar(60)
+  subjectId     String?  @map("subject_id") @db.Uuid
+  payload       Json     @default("{}")
+  ipHash        String?  @map("ip_hash") @db.VarChar(64)
+  userAgentHash String?  @map("user_agent_hash") @db.VarChar(64)
+  prevHash      String?  @map("prev_hash") @db.VarChar(64)
+  hash          String   @db.VarChar(64)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
   @@index([subjectType, subjectId])
   @@index([actorUserId])
+  @@index([institutionId])
   @@index([createdAt])
   @@map("audit_event")
 }
