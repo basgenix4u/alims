@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "1.0.1",
+  "board_version": "1.0.2",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -8,10 +8,11 @@
     "owner": "basgenix4u",
     "source_of_truth": "docs/PRD.md",
     "prd_version": "2.0",
-    "current_release": "Release 1 — The Trusted Research Record"
+    "current_release": "Release 1 — The Trusted Research Record",
+    "issue_tracker": "https://github.com/basgenix4u/alims/issues"
   },
   "meta": {
-    "last_updated": "2026-08-14T00:40:00Z",
+    "last_updated": "2026-08-14T00:50:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -325,7 +326,8 @@
         "Root configs: tsconfig, eslint, prettier, gitignore, env.example",
         "GET /api/v1/health returns 200",
         "docker-compose brings up postgres, redis, minio, mailhog"
-      ]
+      ],
+      "github_issue": 1
     },
     {
       "id": "T-003",
@@ -349,7 +351,8 @@
         "RLS policies on every tenant-owned table",
         "Immutability trigger on approved record_version rows",
         "Append-only trigger on audit_event"
-      ]
+      ],
+      "github_issue": 2
     },
     {
       "id": "T-100",
@@ -372,7 +375,8 @@
         "Refresh reuse detection revokes the token family",
         "Rate limiting + lockout on login",
         "Unit + integration tests green"
-      ]
+      ],
+      "github_issue": 3
     },
     {
       "id": "T-101",
@@ -392,7 +396,8 @@
         "TOTP enrol/verify with encrypted secret at rest",
         "Step-up required for certificate issue/revoke, institution admin, restricted data access",
         "Step-up assertion expires and cannot be replayed"
-      ]
+      ],
+      "github_issue": 4
     },
     {
       "id": "T-102",
@@ -420,7 +425,8 @@
         "All 7 PRD roles encoded with may/may-not rules",
         "Unknown action or resource denies by default",
         "No authorization logic anywhere in the frontend"
-      ]
+      ],
+      "github_issue": 5
     },
     {
       "id": "T-103",
@@ -441,7 +447,8 @@
         "App connects as non-superuser, non-BYPASSRLS role",
         "Tenant context set per request",
         "Test proves cross-tenant read returns zero rows on every tenant table"
-      ]
+      ],
+      "github_issue": 6
     },
     {
       "id": "T-104",
@@ -462,7 +469,8 @@
         "prev_hash chain verified by CLI command",
         "UPDATE and DELETE rejected by DB trigger",
         "PII redacted from payloads"
-      ]
+      ],
+      "github_issue": 7
     },
     {
       "id": "T-105",
@@ -482,7 +490,8 @@
         "Institution statuses: pending_verification, verified, suspended, archived",
         "Only verified institutions may issue Institutionally Verified status",
         "Name-change and department-merge history preserved"
-      ]
+      ],
+      "github_issue": 8
     },
     {
       "id": "T-200",
@@ -504,7 +513,8 @@
         "Title 10–500, abstract 100–10000, keywords 1–20 enforced server-side",
         "Draft saves without complete publication fields",
         "Official submission blocked until required institutional fields complete"
-      ]
+      ],
+      "github_issue": 9
     },
     {
       "id": "T-201",
@@ -527,7 +537,8 @@
         "New revision creates a new version with change summary",
         "Version states visible: current, returned, approved, superseded, withdrawn, disputed",
         "DB trigger rejects mutation of immutable versions"
-      ]
+      ],
+      "github_issue": 10
     },
     {
       "id": "T-202",
@@ -549,7 +560,8 @@
         "Interrupted upload resumes without losing record metadata",
         "Receipt issued only after confirmed full receipt",
         "Accepted formats, size limits, progress surfaced before upload begins"
-      ]
+      ],
+      "github_issue": 11
     },
     {
       "id": "T-203",
@@ -572,7 +584,8 @@
         "Submission blocked while processing or on failed scan",
         "Unsafe file returns plain-language message with a next action, no internal detail",
         "Duplicate-upload prompt distinguishes new version from accidental duplicate"
-      ]
+      ],
+      "github_issue": 12
     },
     {
       "id": "T-300",
@@ -597,7 +610,8 @@
         "Illegal transitions unrepresentable",
         "Supervisor never auto-approves on deadline lapse",
         "Reviewer cannot edit a student's submitted file"
-      ]
+      ],
+      "github_issue": 13
     },
     {
       "id": "T-301",
@@ -620,7 +634,8 @@
         "Results visible only to authorised roles",
         "Reviewer must select outcome + reason from the PRD 6.5 set",
         "No automatic rejection, labelling, or certificate cancellation"
-      ]
+      ],
+      "github_issue": 14
     },
     {
       "id": "T-302",
@@ -644,7 +659,8 @@
         "Contains only the 10 approved PRD 6.4 fields",
         "Makes no ownership/originality/degree claim",
         "Issue and revoke require step-up MFA"
-      ]
+      ],
+      "github_issue": 15
     },
     {
       "id": "T-303",
@@ -667,7 +683,8 @@
         "Private academic, identity, assessment and review data unreachable from this path",
         "No sensitive data embedded in the QR token itself",
         "p95 response under 2 seconds"
-      ]
+      ],
+      "github_issue": 16
     },
     {
       "id": "T-304",
@@ -689,7 +706,8 @@
         "Results show only permitted fields",
         "Restricted titles, abstracts, files and reviewer notes never leak to unauthorised viewers",
         "p95 under 3 seconds"
-      ]
+      ],
+      "github_issue": 17
     },
     {
       "id": "T-305",
@@ -711,7 +729,8 @@
         "Embargoed full text undownloadable while metadata stays discoverable",
         "Embargo expiry never overrides active rights restriction or open dispute",
         "Requester never receives private contact details"
-      ]
+      ],
+      "github_issue": 18
     },
     {
       "id": "T-400",
@@ -734,7 +753,8 @@
         "Skip links, landmarks, focus management in place",
         "i18n ready; no hardcoded user-facing strings",
         "Zero TypeScript errors"
-      ]
+      ],
+      "github_issue": 19
     },
     {
       "id": "T-401",
@@ -757,7 +777,8 @@
         "Errors not conveyed by colour alone",
         "No token in localStorage; refresh handled via httpOnly cookie",
         "Session expiry handled gracefully"
-      ]
+      ],
+      "github_issue": 20
     },
     {
       "id": "T-402",
@@ -783,7 +804,8 @@
         "Upload shows formats, limits, progress, interruption and completion states",
         "Unsaved state clearly indicated; never claims submitted without a receipt",
         "Version history visible and never destructive"
-      ]
+      ],
+      "github_issue": 21
     },
     {
       "id": "T-403",
@@ -806,7 +828,8 @@
         "Assigned work, latest versions, declared contributors, pending actions in one place",
         "Return-for-revision requires a structured comment",
         "No affordance to edit a student's file"
-      ]
+      ],
+      "github_issue": 22
     },
     {
       "id": "T-404",
@@ -831,7 +854,8 @@
         "QR page renders Valid/Superseded/Revoked/Not Found unambiguously",
         "Public search exposes only permitted fields",
         "Certificate issuance UI enforces step-up MFA"
-      ]
+      ],
+      "github_issue": 23
     },
     {
       "id": "T-600",
@@ -852,7 +876,8 @@
         "Visible focus states on all interactive elements",
         "Type scale readable at 200% zoom without loss of function",
         "Tokens exported as CSS variables + Tailwind theme"
-      ]
+      ],
+      "github_issue": 24
     },
     {
       "id": "T-601",
@@ -873,7 +898,8 @@
         "Radix primitives; correct ARIA and keyboard behaviour",
         "axe-core zero violations",
         "Every component documented with usage and a11y notes"
-      ]
+      ],
+      "github_issue": 25
     },
     {
       "id": "T-602",
@@ -896,7 +922,8 @@
         "Plain-language explanation for each status",
         "No score, percentage, or ranking visual anywhere",
         "Distinguishes Self-Published from Institutionally Verified unmistakably"
-      ]
+      ],
+      "github_issue": 26
     }
   ],
   "roadblocks": [
