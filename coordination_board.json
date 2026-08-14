@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "1.1.1",
+  "board_version": "1.2.0",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -12,7 +12,7 @@
     "issue_tracker": "https://github.com/basgenix4u/alims/issues"
   },
   "meta": {
-    "last_updated": "2026-08-14T00:45:00Z",
+    "last_updated": "2026-08-14T01:05:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -154,7 +154,7 @@
     {
       "id": "agent_5",
       "role": "Lead Software Architect · SRE · Technical Coordinator",
-      "status": "active",
+      "status": "reviewing — awaiting agent PRs",
       "specialisation": "Architecture, schema, API contracts, code review, merge authority, CI/CD, release",
       "owned_paths": [
         "coordination_board.json",
@@ -169,13 +169,12 @@
         "packages/config/**"
       ],
       "merge_authority": true,
-      "active_tasks": [
-        "T-003"
-      ],
+      "active_tasks": [],
       "completed_tasks": [
         "T-000",
         "T-001",
-        "T-002"
+        "T-002",
+        "T-003"
       ],
       "notes": "Sole merge authority for main and dev. Owns the DB schema and the API contract."
     },
@@ -334,7 +333,7 @@
       "id": "T-003",
       "title": "Author Prisma schema for Release 1 + RLS migration",
       "assignee": "agent_5",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M0",
       "prd_refs": [
@@ -383,7 +382,7 @@
       "id": "T-101",
       "title": "TOTP MFA enrolment + step-up guard for high-impact actions",
       "assignee": "agent_1",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M1",
       "prd_refs": [
@@ -433,7 +432,7 @@
       "id": "T-103",
       "title": "PostgreSQL RLS enforcement + cross-tenant isolation test suite",
       "assignee": "agent_1",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M1",
       "prd_refs": [
@@ -455,7 +454,7 @@
       "id": "T-104",
       "title": "Hash-chained tamper-evident audit log + chain verifier",
       "assignee": "agent_1",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P1",
       "milestone": "M1",
       "prd_refs": [
@@ -477,7 +476,7 @@
       "id": "T-105",
       "title": "Institution onboarding, departments, programmes, sessions",
       "assignee": "agent_1",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P1",
       "milestone": "M1",
       "prd_refs": [
@@ -521,7 +520,7 @@
       "id": "T-201",
       "title": "Append-only version history with immutability enforcement",
       "assignee": "agent_2",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M2",
       "prd_refs": [
@@ -545,7 +544,7 @@
       "id": "T-202",
       "title": "Resumable presigned multipart uploads + deposit receipts",
       "assignee": "agent_2",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P0",
       "milestone": "M2",
       "prd_refs": [
@@ -691,7 +690,7 @@
       "id": "T-304",
       "title": "Search & discovery with safe result projection",
       "assignee": "agent_3",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P1",
       "milestone": "M3",
       "prd_refs": [
@@ -714,7 +713,7 @@
       "id": "T-305",
       "title": "Access levels, embargo scheduling, access requests",
       "assignee": "agent_3",
-      "status": "blocked",
+      "status": "pending",
       "priority": "P1",
       "milestone": "M3",
       "prd_refs": [
@@ -1011,6 +1010,12 @@
       "title": "Repository made public; native branch protection replaces CI-only enforcement",
       "status": "accepted",
       "rationale": "Public visibility unlocks free unlimited Actions minutes and native branch protection on main and dev, resolving RB-002 and RB-003 together. The pre-push hook remains as defence in depth. Verified before flipping visibility that the PAT value appears in no file and no commit in any revision."
+    },
+    {
+      "id": "ADR-007",
+      "title": "Search vector maintained by trigger rather than GENERATED column",
+      "status": "accepted",
+      "rationale": "to_tsvector(regconfig,text) is STABLE, not IMMUTABLE, so PostgreSQL rejects it in a GENERATED ALWAYS expression. A BEFORE INSERT OR UPDATE trigger on title/abstract/keywords gives identical behaviour with an explicit refresh point."
     }
   ],
   "integration_queue": [],
@@ -1034,6 +1039,26 @@
       "method": "merge",
       "ci": "green",
       "summary": "M0 foundation promoted to main."
+    },
+    {
+      "pr": 31,
+      "task": "T-003",
+      "branch": "chore/agent-5/prisma-schema",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "26 tables, RLS on 12 tenant tables, immutability + audit hash chain, 18 integration tests."
+    },
+    {
+      "pr": 32,
+      "task": "T-003",
+      "branch": "dev",
+      "into": "main",
+      "merged_by": "agent_5",
+      "method": "merge",
+      "ci": "green",
+      "summary": "Database security layer promoted to main."
     }
   ]
 }
