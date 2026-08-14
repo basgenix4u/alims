@@ -1,0 +1,88 @@
+name: Branch Guard
+
+# Compensating control for branch protection (unavailable on private repos
+# without GitHub Pro). Enforces the Git-Ops Collaboration Protocol in CI.
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  enforce-protocol:
+    name: Enforce Git-Ops protocol
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Block direct pushes by non-coordinator
+        if: github.event_name == 'push'
+        run: |
+          ACTOR="${{ github.actor }}"
+          if [ "$ACTOR" != "basgenix4u" ]; then
+            echo "::error::Direct push to ${{ github.ref_name }} by '$ACTOR' is forbidden."
+            echo "Only agent_5 (basgenix4u) may write to main/dev. Open a PR instead."
+            exit 1
+          fi
+          echo "Push by coordinator '$ACTOR' — allowed."
+
+      - name: Validate branch naming on PRs
+        if: github.event_name == 'pull_request'
+        run: |
+          BR="${{ github.head_ref }}"
+          if ! echo "$BR" | grep -qE '^(feat|fix|chore|docs|test|refactor|design)/agent-[1-6]/[a-z0-9._-]+$'; then
+            echo "::error::Branch '$BR' violates the naming rule."
+            echo "Expected: <type>/agent-<n>/<slug>   e.g. feat/agent-2/record-versioning"
+            exit 1
+          fi
+          echo "Branch name OK: $BR"
+
+      - name: Require task ID in PR title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if ! echo "$PR_TITLE" | grep -qE '\[T-[0-9]{3}\]'; then
+            echo "::error::PR title must reference a task ID, e.g. '... [T-201]'."
+            exit 1
+          fi
+          echo "Task reference OK."
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail on credential patterns
+        run: |
+          set +e
+          PATTERN='ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}'
+          MATCHES=$(grep -rInE "$PATTERN" --exclude-dir=.git --exclude-dir=node_modules . )
+          if [ -n "$MATCHES" ]; then
+            echo "::error::Potential secret committed. Rotate it immediately."
+            echo "$MATCHES" | sed -E 's/(ghp_|github_pat_)[A-Za-z0-9_]+/\1***REDACTED***/g'
+            exit 1
+          fi
+          echo "No credential patterns found."
+
+      - name: Ensure .env is not tracked
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env is tracked. It must never be committed."
+            exit 1
+          fi
+          echo ".env is not tracked — good."
+
+  validate-board:
+    name: Validate coordination board
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Schema and integrity checks
+        run: python3 scripts/validate_board.py

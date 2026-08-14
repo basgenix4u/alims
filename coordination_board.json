@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "1.0.0",
+  "board_version": "1.0.1",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -11,7 +11,7 @@
     "current_release": "Release 1 — The Trusted Research Record"
   },
   "meta": {
-    "last_updated": "2026-08-14T00:15:00Z",
+    "last_updated": "2026-08-14T00:40:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -25,7 +25,15 @@
       "main": "Protected. Release-ready only. Agent 5 merges exclusively.",
       "dev": "Protected integration branch. All feature branches target dev. Agent 5 merges exclusively.",
       "feature_branch_pattern": "<type>/agent-<n>/<short-slug>",
-      "allowed_types": ["feat", "fix", "chore", "docs", "test", "refactor", "design"],
+      "allowed_types": [
+        "feat",
+        "fix",
+        "chore",
+        "docs",
+        "test",
+        "refactor",
+        "design"
+      ],
       "example": "feat/agent-2/record-versioning"
     },
     "rules": [
@@ -160,8 +168,13 @@
         "packages/config/**"
       ],
       "merge_authority": true,
-      "active_tasks": ["T-000", "T-001", "T-002"],
-      "completed_tasks": [],
+      "active_tasks": [
+        "T-002"
+      ],
+      "completed_tasks": [
+        "T-000",
+        "T-001"
+      ],
       "notes": "Sole merge authority for main and dev. Owns the DB schema and the API contract."
     },
     {
@@ -254,7 +267,7 @@
       "id": "T-000",
       "title": "Create private repository and establish Git-Ops protocol",
       "assignee": "agent_5",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M0",
       "prd_refs": [],
@@ -270,12 +283,25 @@
       "id": "T-001",
       "title": "Publish API specification v1 (the handshake contract)",
       "assignee": "agent_5",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M0",
-      "prd_refs": ["6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9", "6.10"],
+      "prd_refs": [
+        "6.1",
+        "6.2",
+        "6.3",
+        "6.4",
+        "6.5",
+        "6.6",
+        "6.7",
+        "6.8",
+        "6.9",
+        "6.10"
+      ],
       "branch": "main",
-      "depends_on": ["T-000"],
+      "depends_on": [
+        "T-000"
+      ],
       "acceptance": [
         "Every Release 1 endpoint documented with verb, path, auth, request, response, status codes",
         "Error envelope standardised (RFC 9457)",
@@ -286,12 +312,14 @@
       "id": "T-002",
       "title": "Scaffold monorepo: apps/api, apps/web, apps/worker, packages/*",
       "assignee": "agent_5",
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P0",
       "milestone": "M0",
       "prd_refs": [],
       "branch": "chore/agent-5/monorepo-scaffold",
-      "depends_on": ["T-000"],
+      "depends_on": [
+        "T-000"
+      ],
       "acceptance": [
         "pnpm + Turborepo workspace builds green",
         "Root configs: tsconfig, eslint, prettier, gitignore, env.example",
@@ -306,9 +334,16 @@
       "status": "pending",
       "priority": "P0",
       "milestone": "M0",
-      "prd_refs": ["6.1", "6.2", "6.3", "9.1"],
+      "prd_refs": [
+        "6.1",
+        "6.2",
+        "6.3",
+        "9.1"
+      ],
       "branch": "chore/agent-5/prisma-schema",
-      "depends_on": ["T-002"],
+      "depends_on": [
+        "T-002"
+      ],
       "acceptance": [
         "All Release 1 + Release 2 core tables modelled",
         "RLS policies on every tenant-owned table",
@@ -323,9 +358,14 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M1",
-      "prd_refs": ["9.1"],
+      "prd_refs": [
+        "9.1"
+      ],
       "branch": "feat/agent-1/auth-core",
-      "depends_on": ["T-002", "T-003"],
+      "depends_on": [
+        "T-002",
+        "T-003"
+      ],
       "acceptance": [
         "Argon2id hashing; no plaintext anywhere",
         "Access token 15m; refresh rotating in httpOnly SameSite=Strict Secure cookie",
@@ -341,9 +381,13 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M1",
-      "prd_refs": ["9.1"],
+      "prd_refs": [
+        "9.1"
+      ],
       "branch": "feat/agent-1/mfa-stepup",
-      "depends_on": ["T-100"],
+      "depends_on": [
+        "T-100"
+      ],
       "acceptance": [
         "TOTP enrol/verify with encrypted secret at rest",
         "Step-up required for certificate issue/revoke, institution admin, restricted data access",
@@ -357,9 +401,20 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M1",
-      "prd_refs": ["9.1", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7"],
+      "prd_refs": [
+        "9.1",
+        "4.1",
+        "4.2",
+        "4.3",
+        "4.4",
+        "4.5",
+        "4.6",
+        "4.7"
+      ],
       "branch": "feat/agent-1/policy-engine",
-      "depends_on": ["T-002"],
+      "depends_on": [
+        "T-002"
+      ],
       "acceptance": [
         "Single authorize(actor, action, resource) entrypoint",
         "All 7 PRD roles encoded with may/may-not rules",
@@ -374,9 +429,14 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M1",
-      "prd_refs": ["6.1", "9.1"],
+      "prd_refs": [
+        "6.1",
+        "9.1"
+      ],
       "branch": "feat/agent-1/rls-tenancy",
-      "depends_on": ["T-003"],
+      "depends_on": [
+        "T-003"
+      ],
       "acceptance": [
         "App connects as non-superuser, non-BYPASSRLS role",
         "Tenant context set per request",
@@ -390,9 +450,13 @@
       "status": "blocked",
       "priority": "P1",
       "milestone": "M1",
-      "prd_refs": ["9.1"],
+      "prd_refs": [
+        "9.1"
+      ],
       "branch": "feat/agent-1/audit-chain",
-      "depends_on": ["T-003"],
+      "depends_on": [
+        "T-003"
+      ],
       "acceptance": [
         "Every consequential action appends an audit event",
         "prev_hash chain verified by CLI command",
@@ -407,9 +471,13 @@
       "status": "blocked",
       "priority": "P1",
       "milestone": "M1",
-      "prd_refs": ["6.1"],
+      "prd_refs": [
+        "6.1"
+      ],
       "branch": "feat/agent-1/institutions",
-      "depends_on": ["T-102"],
+      "depends_on": [
+        "T-102"
+      ],
       "acceptance": [
         "Institution statuses: pending_verification, verified, suspended, archived",
         "Only verified institutions may issue Institutionally Verified status",
@@ -423,9 +491,14 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M2",
-      "prd_refs": ["6.2"],
+      "prd_refs": [
+        "6.2"
+      ],
       "branch": "feat/agent-2/record-crud",
-      "depends_on": ["T-002", "T-003"],
+      "depends_on": [
+        "T-002",
+        "T-003"
+      ],
       "acceptance": [
         "All required/optional fields per PRD 6.2 table",
         "Title 10–500, abstract 100–10000, keywords 1–20 enforced server-side",
@@ -440,9 +513,15 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M2",
-      "prd_refs": ["6.3", "7.1", "11.2"],
+      "prd_refs": [
+        "6.3",
+        "7.1",
+        "11.2"
+      ],
       "branch": "feat/agent-2/record-versioning",
-      "depends_on": ["T-200"],
+      "depends_on": [
+        "T-200"
+      ],
       "acceptance": [
         "Submitted/approved versions never overwritten",
         "New revision creates a new version with change summary",
@@ -457,9 +536,14 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M2",
-      "prd_refs": ["6.3", "8"],
+      "prd_refs": [
+        "6.3",
+        "8"
+      ],
       "branch": "feat/agent-2/uploads",
-      "depends_on": ["T-200"],
+      "depends_on": [
+        "T-200"
+      ],
       "acceptance": [
         "Presigned multipart; files never transit the API server",
         "Interrupted upload resumes without losing record metadata",
@@ -474,9 +558,15 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M2",
-      "prd_refs": ["6.3", "8", "9.1"],
+      "prd_refs": [
+        "6.3",
+        "8",
+        "9.1"
+      ],
       "branch": "feat/agent-2/file-safety",
-      "depends_on": ["T-202"],
+      "depends_on": [
+        "T-202"
+      ],
       "acceptance": [
         "SHA-256 stored per version",
         "Submission blocked while processing or on failed scan",
@@ -491,9 +581,17 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M3",
-      "prd_refs": ["5.1", "7.1", "11.1", "11.2"],
+      "prd_refs": [
+        "5.1",
+        "7.1",
+        "11.1",
+        "11.2"
+      ],
       "branch": "feat/agent-3/workflow-engine",
-      "depends_on": ["T-201", "T-102"],
+      "depends_on": [
+        "T-201",
+        "T-102"
+      ],
       "acceptance": [
         "Lifecycle state machine as pure, exhaustively tested functions",
         "Illegal transitions unrepresentable",
@@ -508,9 +606,14 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M3",
-      "prd_refs": ["6.5", "11.3"],
+      "prd_refs": [
+        "6.5",
+        "11.3"
+      ],
       "branch": "feat/agent-3/similarity-advisory",
-      "depends_on": ["T-300"],
+      "depends_on": [
+        "T-300"
+      ],
       "acceptance": [
         "Similarity service structurally cannot mutate record status",
         "Status transition requires human_decision_id",
@@ -526,9 +629,16 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M3",
-      "prd_refs": ["6.4", "7.2", "11.5"],
+      "prd_refs": [
+        "6.4",
+        "7.2",
+        "11.5"
+      ],
       "branch": "feat/agent-3/certificates",
-      "depends_on": ["T-300", "T-101"],
+      "depends_on": [
+        "T-300",
+        "T-101"
+      ],
       "acceptance": [
         "Certificate bound to a specific version, never to a record",
         "Contains only the 10 approved PRD 6.4 fields",
@@ -543,9 +653,15 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M3",
-      "prd_refs": ["6.4", "11.4", "11.5"],
+      "prd_refs": [
+        "6.4",
+        "11.4",
+        "11.5"
+      ],
       "branch": "feat/agent-3/public-verify",
-      "depends_on": ["T-302"],
+      "depends_on": [
+        "T-302"
+      ],
       "acceptance": [
         "Returns exactly one of Valid, Superseded, Revoked, Not Found",
         "Private academic, identity, assessment and review data unreachable from this path",
@@ -560,9 +676,14 @@
       "status": "blocked",
       "priority": "P1",
       "milestone": "M3",
-      "prd_refs": ["6.10", "11.4"],
+      "prd_refs": [
+        "6.10",
+        "11.4"
+      ],
       "branch": "feat/agent-3/search-discovery",
-      "depends_on": ["T-200"],
+      "depends_on": [
+        "T-200"
+      ],
       "acceptance": [
         "All 14 PRD 6.10 filter dimensions supported",
         "Results show only permitted fields",
@@ -577,9 +698,14 @@
       "status": "blocked",
       "priority": "P1",
       "milestone": "M3",
-      "prd_refs": ["6.6", "11.4"],
+      "prd_refs": [
+        "6.6",
+        "11.4"
+      ],
       "branch": "feat/agent-3/access-embargo",
-      "depends_on": ["T-200"],
+      "depends_on": [
+        "T-200"
+      ],
       "acceptance": [
         "All 5 PRD access levels enforced server-side",
         "Embargoed full text undownloadable while metadata stays discoverable",
@@ -594,9 +720,15 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M4",
-      "prd_refs": ["9.3", "9.4"],
+      "prd_refs": [
+        "9.3",
+        "9.4"
+      ],
       "branch": "feat/agent-4/app-shell",
-      "depends_on": ["T-002", "T-001"],
+      "depends_on": [
+        "T-002",
+        "T-001"
+      ],
       "acceptance": [
         "Typed API client generated from packages/contracts",
         "Skip links, landmarks, focus management in place",
@@ -611,9 +743,15 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M4",
-      "prd_refs": ["9.1", "9.3"],
+      "prd_refs": [
+        "9.1",
+        "9.3"
+      ],
       "branch": "feat/agent-4/auth-ui",
-      "depends_on": ["T-400", "T-100"],
+      "depends_on": [
+        "T-400",
+        "T-100"
+      ],
       "acceptance": [
         "Full keyboard operability",
         "Errors not conveyed by colour alone",
@@ -628,9 +766,18 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M4",
-      "prd_refs": ["5.1", "6.2", "6.3", "8"],
+      "prd_refs": [
+        "5.1",
+        "6.2",
+        "6.3",
+        "8"
+      ],
       "branch": "feat/agent-4/student-journey",
-      "depends_on": ["T-400", "T-200", "T-202"],
+      "depends_on": [
+        "T-400",
+        "T-200",
+        "T-202"
+      ],
       "acceptance": [
         "Field help explains why data is needed and who will see it",
         "Upload shows formats, limits, progress, interruption and completion states",
@@ -645,9 +792,16 @@
       "status": "blocked",
       "priority": "P1",
       "milestone": "M4",
-      "prd_refs": ["4.2", "5.1", "11.2"],
+      "prd_refs": [
+        "4.2",
+        "5.1",
+        "11.2"
+      ],
       "branch": "feat/agent-4/supervisor-journey",
-      "depends_on": ["T-400", "T-300"],
+      "depends_on": [
+        "T-400",
+        "T-300"
+      ],
       "acceptance": [
         "Assigned work, latest versions, declared contributors, pending actions in one place",
         "Return-for-revision requires a structured comment",
@@ -661,9 +815,18 @@
       "status": "blocked",
       "priority": "P1",
       "milestone": "M4",
-      "prd_refs": ["5.4", "6.4", "6.10"],
+      "prd_refs": [
+        "5.4",
+        "6.4",
+        "6.10"
+      ],
       "branch": "feat/agent-4/registry-public",
-      "depends_on": ["T-400", "T-302", "T-303", "T-304"],
+      "depends_on": [
+        "T-400",
+        "T-302",
+        "T-303",
+        "T-304"
+      ],
       "acceptance": [
         "QR page renders Valid/Superseded/Revoked/Not Found unambiguously",
         "Public search exposes only permitted fields",
@@ -677,9 +840,13 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M5",
-      "prd_refs": ["9.3"],
+      "prd_refs": [
+        "9.3"
+      ],
       "branch": "design/agent-6/design-tokens",
-      "depends_on": ["T-002"],
+      "depends_on": [
+        "T-002"
+      ],
       "acceptance": [
         "Every text/background pair meets AA contrast, documented with ratios",
         "Visible focus states on all interactive elements",
@@ -694,9 +861,13 @@
       "status": "blocked",
       "priority": "P0",
       "milestone": "M5",
-      "prd_refs": ["9.3"],
+      "prd_refs": [
+        "9.3"
+      ],
       "branch": "design/agent-6/component-library",
-      "depends_on": ["T-600"],
+      "depends_on": [
+        "T-600"
+      ],
       "acceptance": [
         "Button, Input, Select, Dialog, Tabs, Toast, Table, FileUpload, StatusBadge",
         "Radix primitives; correct ARIA and keyboard behaviour",
@@ -711,9 +882,15 @@
       "status": "blocked",
       "priority": "P1",
       "milestone": "M5",
-      "prd_refs": ["6.4", "1.5", "9.3"],
+      "prd_refs": [
+        "6.4",
+        "1.5",
+        "9.3"
+      ],
       "branch": "design/agent-6/status-system",
-      "depends_on": ["T-601"],
+      "depends_on": [
+        "T-601"
+      ],
       "acceptance": [
         "All 10 PRD verification labels visually distinct without relying on colour alone",
         "Plain-language explanation for each status",
@@ -732,6 +909,21 @@
       "detail": "Container images cannot be built or run locally by Agent 5. Dockerfiles and compose files are authored and linted here; build/run validation is delegated to GitHub Actions runners where Docker is available.",
       "mitigation": "CI job docker-build validates all images on every PR touching docker/**.",
       "raised_at": "2026-08-14T00:15:00Z"
+    },
+    {
+      "id": "RB-002",
+      "raised_by": "agent_5",
+      "severity": "medium",
+      "status": "mitigated",
+      "title": "GitHub branch protection unavailable on private repo without GitHub Pro",
+      "detail": "PUT /repos/basgenix4u/alims/branches/{main,dev}/protection returned HTTP 403: 'Upgrade to GitHub Pro or make this repository public to enable this feature.' This is an account plan limit, not a token scope limit. The PAT holds full repo scope.",
+      "mitigation": "Compensating controls applied in CI: (1) .github/workflows/branch-guard.yml fails any push to main/dev by an actor other than basgenix4u; (2) enforces branch naming and task-ID references on PRs; (3) CODEOWNERS routes every path to @basgenix4u; (4) secret-scan job blocks credential patterns. Native protection can be enabled instantly if the repo goes public or the plan is upgraded.",
+      "options_for_owner": [
+        "Upgrade to GitHub Pro to enable native branch protection on private repos",
+        "Make the repository public (native protection becomes free)",
+        "Continue with CI-based compensating controls (currently active)"
+      ],
+      "raised_at": "2026-08-14T00:35:00Z"
     }
   ],
   "decisions": [
@@ -758,6 +950,12 @@
       "title": "Similarity provider is advisory and structurally isolated",
       "status": "accepted",
       "rationale": "PRD §6.5 and §11.3 forbid automated accusations. The similarity path has no write access to record status; transitions require a recorded human decision."
+    },
+    {
+      "id": "ADR-005",
+      "title": "CI-enforced branch protection in place of native GitHub protection",
+      "status": "accepted",
+      "rationale": "Native protection requires GitHub Pro for private repositories. A branch-guard workflow plus CODEOWNERS provides equivalent day-to-day enforcement of the sole-merge-authority rule without changing repository visibility or incurring cost."
     }
   ],
   "integration_queue": [],

@@ -1,0 +1,12 @@
+# Agent 5 (basgenix4u) is the sole merge authority and owns all
+# cross-cutting contracts. Every PR requires review from the owner.
+
+*                            @basgenix4u
+
+# Contracts and coordination — Agent 5 only, no exceptions
+/coordination_board.json     @basgenix4u
+/api_specification.md        @basgenix4u
+/prisma/schema.prisma        @basgenix4u
+/docs/                       @basgenix4u
+/.github/                    @basgenix4u
+/docker/                     @basgenix4u
