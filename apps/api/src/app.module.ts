@@ -8,6 +8,7 @@ import { PrismaModule } from './infrastructure/database/prisma.module';
 import { JwtAuthGuard } from './interface/guards/jwt-auth.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { RecordsModule } from './modules/records/records.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { HealthModule } from './modules/health/health.module';
     AuditModule,
     AuthModule,
     HealthModule,
+    RecordsModule,
   ],
   providers: [
     // Order matters: throttle before authentication so unauthenticated
