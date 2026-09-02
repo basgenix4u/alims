@@ -1,17 +1,26 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { HealthResponse, ReadinessResponse } from '@alims/contracts';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { Public } from '../../interface/decorators/public.decorator';
 
 /**
  * Smoke-test and dependency probes (api_specification.md §16).
  * Deliberately exposes no build paths, versions of dependencies, or
  * internal hostnames — PRD §9.1 forbids leaking system detail.
+ *
+ * Public: orchestrator probes cannot present a bearer token.
  */
 @ApiTags('system')
 @Controller()
 export class HealthController {
   private readonly startedAt = Date.now();
 
+  // Explicit token: the test runner compiles without emitDecoratorMetadata,
+  // so type-only injection would resolve to undefined there.
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  @Public()
   @Get('health')
   @ApiOperation({ summary: 'Liveness probe' })
   @ApiOkResponse({ description: 'Service is alive' })
@@ -24,14 +33,17 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get('health/ready')
   @ApiOperation({ summary: 'Readiness probe with dependency checks' })
   @ApiOkResponse({ description: 'Dependency status' })
-  ready(): ReadinessResponse {
-    // Real probes are wired in T-003 once Prisma, Redis and S3 clients exist.
+  async ready(): Promise<ReadinessResponse> {
+    const database = (await this.prisma.isHealthy()) ? 'up' : 'down';
+    // Redis and object storage arrive with T-2xx (Agent 2); reported as
+    // 'unknown' rather than faking 'up'.
     return {
-      status: 'ok',
-      checks: { database: 'unknown', redis: 'unknown', storage: 'unknown' },
+      status: database === 'up' ? 'ok' : 'degraded',
+      checks: { database, redis: 'unknown', storage: 'unknown' },
       timestamp: new Date().toISOString(),
     };
   }

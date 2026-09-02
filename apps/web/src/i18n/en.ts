@@ -1,0 +1,151 @@
+/** English catalogue — PRD §9.4 first language. Keys only; never interpolate HTML. */
+export const en = {
+  meta: {
+    title: 'ALIMS — The Global Academic Knowledge Infrastructure',
+    description: 'Preserve. Connect. Activate. Verified research records and academic lineage.',
+  },
+  brand: {
+    name: 'ALIMS',
+    tagline: 'The Global Academic Knowledge Infrastructure',
+    motto: 'Preserve. Connect. Activate.',
+  },
+  a11y: {
+    skipToMain: 'Skip to main content',
+    openMenu: 'Open navigation',
+    closeMenu: 'Close navigation',
+    locale: 'Language',
+  },
+  nav: {
+    home: 'Home',
+    dashboard: 'Command dashboard',
+    newRecord: 'New research record',
+    lineage: 'Lineage viewport',
+    verify: 'Verify a certificate',
+    primary: 'Primary',
+  },
+  home: {
+    heading: 'Verified research, preserved with integrity',
+    lede: 'ALIMS is the academic knowledge infrastructure for depositing, reviewing, verifying, and discovering research records — without inventing scores or hiding authority in the interface.',
+    statusHeading: 'Environment status',
+    statusHelp: 'Live check against the API. This page holds no mock academic data.',
+    nextHeading: 'Start a journey',
+  },
+  dashboard: {
+    title: 'Institution metrics',
+    intro:
+      'Counts are aggregated from records you are entitled to see. Empty series mean no authorised data yet — never a fabricated sample.',
+    byStatus: 'Records by lifecycle status',
+    byType: 'Records by output type',
+    empty: 'No records are visible to this session yet.',
+    loading: 'Loading authorised records…',
+    error: 'The records API is not available. Charts will appear when the server responds.',
+    tableCaption: 'Numeric breakdown used by the charts. Colour is never the only signal.',
+    count: 'Count',
+    category: 'Category',
+  },
+  wizard: {
+    title: 'Deposit a research record',
+    intro:
+      'Drafts may be incomplete. Required publication fields are explained below, including who will see them.',
+    step: 'Step {current} of {total}',
+    steps: {
+      identity: 'Identity of the work',
+      access: 'Access and licence',
+      context: 'Research context',
+    },
+    fields: {
+      outputType: 'Output type',
+      outputTypeHelp:
+        'Tells reviewers what kind of work this is. Visible on public records when published.',
+      title: 'Title',
+      titleHelp:
+        'A precise title (10–500 characters). Reviewers and, later, the public will see this.',
+      disciplines: 'Disciplines',
+      disciplinesHelp: 'At least one discipline. Used for discovery, never for ranking.',
+      keywords: 'Keywords',
+      keywordsHelp: 'One to twenty keywords. Helps search; not a quality score.',
+      abstract: 'Abstract',
+      abstractHelp:
+        'Required to submit or publish (100–10,000 characters). Visibility follows the access level.',
+      researchYear: 'Research year',
+      researchYearHelp: 'Calendar year of the work, not the deposit year.',
+      accessLevel: 'Access level',
+      accessLevelHelp:
+        'Controls who may read the full text. The server enforces this independently of the UI.',
+      licence: 'Licence',
+      licenceHelp: 'SPDX identifier or institutional licence. Displayed with the record.',
+      researchQuestion: 'Research question',
+      researchQuestionHelp: 'Optional. Helps continuation and discovery; not scored.',
+      methodology: 'Methodology',
+      methodologyHelp: 'Optional. Visible according to access level.',
+      datasetLinks: 'Dataset links',
+      datasetLinksHelp: 'Optional public URLs, one per line.',
+      codeLinks: 'Code links',
+      codeLinksHelp: 'Optional public URLs, one per line.',
+    },
+    addKeyword: 'Add keyword',
+    addDiscipline: 'Add discipline',
+    next: 'Continue',
+    back: 'Back',
+    saveDraft: 'Save draft',
+    saving: 'Saving draft…',
+    saved: 'Draft saved. This is not a submission receipt.',
+    error: 'The draft could not be saved. Nothing was submitted.',
+    unsaved: 'You have unsaved changes.',
+    validation:
+      'Please correct the highlighted fields. Errors are listed in text, not only in colour.',
+  },
+  lineage: {
+    title: 'Academic lineage viewport',
+    intro:
+      'A WebGL view of verified relationships for a record. Machine-suggested edges are never shown as verified. Keyboard: arrow keys orbit, plus and minus zoom, zero resets.',
+    recordId: 'Record identifier',
+    load: 'Load lineage',
+    loading: 'Fetching lineage graph…',
+    empty: 'No lineage graph is available for this identifier.',
+    error: 'Lineage could not be loaded. The viewport stays empty rather than inventing nodes.',
+    webglUnsupported:
+      'WebGL is unavailable. A text table of the same nodes and edges is shown instead.',
+    tableCaption: 'Lineage nodes and relationship edges (accessible equivalent of the 3D view)',
+    node: 'Node',
+    edge: 'Relationship',
+    from: 'From',
+    to: 'To',
+    type: 'Type',
+    evidence: 'Evidence state',
+    reducedMotion: 'Reduced motion is on — the camera is static.',
+  },
+  verify: {
+    title: 'Certificate verification',
+    intro:
+      'Enter the QR token from a certificate. Only the public verification fields are requested.',
+    token: 'Verification token',
+    submit: 'Verify',
+    loading: 'Checking certificate…',
+    decoding: 'Rendering certificate card…',
+    notFound: 'No certificate matches this token.',
+    disclaimer: 'Disclaimer',
+    nxr: 'NXR identifier',
+    institution: 'Institution',
+    issued: 'Issue date',
+    researchers: 'Researchers',
+  },
+  asset: {
+    loading: 'Loading asset…',
+    progress: 'Loaded {loaded} of {total} bytes',
+    ready: 'Asset ready',
+    error: 'The asset could not be rendered.',
+    unsupported:
+      'This file type cannot be previewed. Use the download action if you are authorised.',
+    empty: 'No asset selected.',
+  },
+  common: {
+    loading: 'Loading…',
+    retry: 'Try again',
+    required: 'Required',
+    optional: 'Optional',
+    close: 'Close',
+  },
+} as const;
+
+export type MessageTree = typeof en;
