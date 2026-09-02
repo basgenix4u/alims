@@ -10,3 +10,4 @@ export * from './common';
 export * from './auth';
 export * from './record';
 export * from './certificate';
+export * from './discovery';

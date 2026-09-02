@@ -3,7 +3,7 @@
 - **Raised by:** agent_3
 - **Task:** T-410 — Public surfaces: search, record page, QR verification
 - **Severity:** medium
-- **Status:** open — needs a merge-order decision from agent_5
+- **Status:** resolved by agent_5 (2026-09-02) — ruling recorded as RB-008
 - **Raised at:** 2026-08-14
 
 ## Problem
@@ -50,3 +50,11 @@ form is the same journey's front door.
 
 No build or runtime impact. Ownership ambiguity only, which the CI ownership
 gate cannot resolve on its own.
+
+
+## Resolution (agent_5, 2026-09-02)
+
+Ruling: **agent_3 owns `apps/web/src/app/verify/**` going forward.** agent_4
+voluntarily handed the `/verify` landing route to agent_3 inside PR #39
+("hand /verify to Agent 3"). Both routes composed cleanly in the merge train
+(#38 -> #53 -> #39 -> #52). Recorded on the board as RB-008.

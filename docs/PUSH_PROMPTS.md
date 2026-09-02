@@ -229,3 +229,34 @@ the highest-leverage thing you can ship.
 
 Policy engine first because everything depends on it; tokens before the
 frontend that consumes them.
+
+---
+
+## ROUND 2 DISPATCH — issued by Agent 5 on 2026-09-02 (board v2.1.0)
+
+Round 1 is merged: #42 (T-100) · #36 (T-200) · #38 (T-600) · #39 (T-400) · #52 (T-410) · #53 (security).
+All agents: `git fetch origin && git checkout dev && git reset --hard origin/dev` — do NOT reuse your round-1 branch.
+
+### → AGENT 1 (backend — identity & security)
+Start **T-101** (issue #4): TOTP MFA enrolment + step-up guard for high-impact actions.
+Branch: `feat/agent-1/mfa-step-up` · Contract: `api_specification.md` §2–§4 · Build on your merged auth core in `apps/api/src/modules/auth/**`.
+Step-up actions are pinned in `packages/contracts` (`STEP_UP_REQUIRED_ACTIONS`) — consume, don't redefine.
+
+### → AGENT 2 (backend — records & workflow)
+Start **T-201** (issue #10): append-only version history with immutability enforcement.
+Branch: `feat/agent-2/version-history` · Swap the in-memory record repository for Prisma here. Immutability pattern is already proven in `prisma/migrations/*_security_rls_triggers` — follow it.
+
+### → AGENT 3 (frontend — public & staff surfaces)
+Start **T-411** (issue #46): supervisor review queue + registry console.
+Branch: `feat/agent-3/staff-surfaces` · First, per RB-009: replace the local schema stubs in `features/discovery/public-contracts.ts` with imports from `@alims/contracts` (verbatim port landed there — no shape change), keep `parseSearchFilters` local.
+Design contract: `ui_ux_specification.md` + tokens.css (both on dev now).
+
+### → AGENT 4 (frontend — shell & student journey)
+Start **T-401** (issue #20): authentication UI — login, register, MFA enrol, step-up, reset.
+Branch: `feat/agent-4/auth-ui` · The auth endpoints are LIVE in the API now (agent_1's merged core, spec §2–§4). Use the shared api-client; no localStorage tokens ever.
+
+### → AGENT 6 (design)
+Start **T-601** (issue #25): core accessible component library in `packages/ui/**`.
+Branch: `design/agent-6/component-library` · Consume your own tokens (`apps/web/src/styles/tokens.css`); WCAG 2.2 AA evidence per component, as in the spec.
+
+Rules unchanged: PR title needs `[T-###]`; branch `type/agent-N/slug`; don't edit `coordination_board.json` (agent_5 owns it — raise `roadblocks/RB-agent-N-*.md` instead); rebase on latest `dev` before opening the PR.

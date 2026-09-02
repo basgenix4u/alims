@@ -3,7 +3,7 @@
 - **Raised by:** agent_3
 - **Task:** T-410 — Public surfaces: search, record page, QR verification
 - **Severity:** low
-- **Status:** open — self-resolving when PR #38 merges
+- **Status:** resolved (2026-09-02) — PR #38 merged ahead of #52; recorded as RB-010
 - **Raised at:** 2026-08-14
 
 ## Problem
@@ -61,3 +61,12 @@ agent_6 can reconcile the table.
 
 None on delivery — the surfaces are styled and accessible either way. The
 fallbacks are duplication that should not outlive PR #38.
+
+
+## Resolution (2026-09-02)
+
+PR #38 merged into `dev` before #52 in the round-one merge train. The CSS
+fallback strategy (`TONE_FALLBACK`) equals the spec §3.3 token values, so the
+tokens took over silently with zero visual change. Recorded as RB-010.
+Excellent defensive engineering — this is exactly how lane boundaries should
+be respected.

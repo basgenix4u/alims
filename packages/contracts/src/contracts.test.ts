@@ -4,6 +4,8 @@ import {
   FORBIDDEN_PUBLIC_FIELDS, KEYWORDS_MAX, PASSWORD_MIN_LENGTH, STEP_UP_REQUIRED_ACTIONS,
   TITLE_MAX, TITLE_MIN, createRecordSchema, creditRoleSchema, publicVerificationSchema,
   registerSchema, verificationLevelSchema,
+  SEARCH_FILTER_KEYS, publicRecordDetailSchema, publicRecordSummarySchema,
+  publicSearchFiltersSchema, publicSearchResponseSchema,
 } from './index';
 
 /**
@@ -160,5 +162,74 @@ describe('PRD §9.1 — authentication hardening', () => {
     expect(STEP_UP_REQUIRED_ACTIONS).toContain('certificate.issue');
     expect(STEP_UP_REQUIRED_ACTIONS).toContain('certificate.revoke');
     expect(STEP_UP_REQUIRED_ACTIONS).toContain('institution.status.change');
+  });
+});
+
+
+describe('PRD §6.10 / spec §13 — public discovery contracts', () => {
+  const summary = {
+    nxrId: 'NXR-2026-000042',
+    title: 'A Study Of Registry-Mediated Research Deposit Flows',
+    outputType: 'thesis',
+    contributorsDisplay: ['A. Abdulalim'],
+    institutionName: 'University of Example',
+    researchYear: 2026,
+    abstractExcerpt: 'An excerpt that is safe for public display.',
+    verificationLevel: 'institutionally_verified',
+    accessStatus: 'open',
+    relationshipIndicators: [{ relType: 'builds_on', count: 2 }],
+    embargoUntil: null,
+  };
+
+  it('exposes exactly the 14 PRD §6.10 search dimensions', () => {
+    expect(SEARCH_FILTER_KEYS).toHaveLength(14);
+    expect(Object.keys(publicSearchFiltersSchema.shape)).toEqual([...SEARCH_FILTER_KEYS]);
+  });
+
+  it('accepts a valid public summary and paginates it', () => {
+    const one = publicRecordSummarySchema.parse(summary);
+    expect(one.accessStatus).toBe('open');
+    const page = publicSearchResponseSchema.parse({
+      data: [one],
+      pagination: { nextCursor: null, hasMore: false, limit: 20 },
+    });
+    expect(page.data).toHaveLength(1);
+  });
+
+  it('rejects an unknown accessStatus', () => {
+    expect(() =>
+      publicRecordSummarySchema.parse({ ...summary, accessStatus: 'secret' }),
+    ).toThrow();
+  });
+
+  it('rejects a negative relationship count', () => {
+    expect(() =>
+      publicRecordSummarySchema.parse({
+        ...summary,
+        relationshipIndicators: [{ relType: 'builds_on', count: -1 }],
+      }),
+    ).toThrow();
+  });
+
+  it('detail is the summary widened only with permitted optional fields', () => {
+    const detail = publicRecordDetailSchema.parse({
+      ...summary,
+      abstract: summary.abstractExcerpt,
+      keywords: ['registry'],
+      discipline: 'Information Science',
+      contributors: [{ name: 'A. Abdulalim', roles: ['conceptualization'], evidenceLabel: null }],
+      accessLevel: 'full_public',
+      relationships: [{ relType: 'builds_on', targetNxrId: 'NXR-2025-000001', targetTitle: 'Prior' }],
+    });
+    expect(detail.relationships).toHaveLength(1);
+    // A bare summary must still parse as a detail (narrower server projection).
+    expect(() => publicRecordDetailSchema.parse(summary)).not.toThrow();
+  });
+
+  it('carries no field capable of assessment or reviewer-note leakage', () => {
+    const keys = new Set(Object.keys(publicRecordDetailSchema.shape));
+    for (const forbidden of ['grades', 'similarity', 'reviewerNotes', 'files', 'studentId']) {
+      expect(keys.has(forbidden)).toBe(false);
+    }
   });
 });
