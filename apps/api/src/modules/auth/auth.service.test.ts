@@ -7,7 +7,9 @@ import { AuditService } from '../../infrastructure/audit/audit.service';
 import type { PrismaService } from '../../infrastructure/database/prisma.service';
 import { AuthService, type RequestContext } from './auth.service';
 import { PasswordService } from './password.service';
+import { SecretCipherService } from './secret-cipher.service';
 import { TokenService } from './token.service';
+import { TotpService } from './totp.service';
 
 const ENV: Partial<Env> = {
   JWT_ACCESS_SECRET: 'test-access-secret-that-is-long-enough-000',
@@ -15,6 +17,7 @@ const ENV: Partial<Env> = {
   ACCESS_TOKEN_TTL_SECONDS: 900,
   REFRESH_TOKEN_TTL_SECONDS: 2_592_000,
   STEP_UP_TTL_SECONDS: 300,
+  MFA_ENCRYPTION_KEY: 'test-mfa-encryption-key-00000000000000',
   JWT_ISSUER: 'alims.api',
   JWT_AUDIENCE: 'alims.web',
   LOGIN_MAX_ATTEMPTS: 5,
@@ -72,6 +75,8 @@ function makeHarness(): {
   audit: { record: ReturnType<typeof vi.fn> };
   passwords: PasswordService;
   tokens: TokenService;
+  totp: TotpService;
+  cipher: SecretCipherService;
 } {
   const db = new FakeDb();
 
@@ -155,15 +160,19 @@ function makeHarness(): {
   const audit = { record: vi.fn(async () => undefined) };
   const passwords = new PasswordService();
   const tokens = new TokenService(config);
+  const totp = new TotpService();
+  const cipher = new SecretCipherService(config);
   const service = new AuthService(
     prisma,
     passwords,
     tokens,
     audit as unknown as AuditService,
     config,
+    totp,
+    cipher,
   );
 
-  return { service, db, audit, passwords, tokens };
+  return { service, db, audit, passwords, tokens, totp, cipher };
 }
 
 describe('AuthService — registration', () => {
@@ -553,5 +562,149 @@ describe('AuthService — response shaping', () => {
     expect(serialised).not.toContain('argon2');
     expect(serialised).not.toContain('encrypted-totp-secret');
     expect(serialised).not.toContain('encrypted-legal-name');
+  });
+});
+
+describe('AuthService — MFA enrolment, verification and step-up', () => {
+  it('enrollMfa returns the plaintext secret exactly once and stores it encrypted', async () => {
+    const { service, db } = makeHarness();
+    const user = baseUser();
+    db.users.set(user.id, user);
+
+    const result = await service.enrollMfa(user);
+
+    expect(result.secret).toMatch(/^[A-Z2-7]{32}$/);
+    expect(result.otpauthUrl).toContain('otpauth://totp/');
+    expect(result.otpauthUrl).toContain('issuer=ALIMS');
+    expect(result.recoveryCodes).toHaveLength(8);
+
+    const stored = db.users.get(user.id)!;
+    expect(stored.mfaSecretEncrypted).not.toBeNull();
+    expect(stored.mfaSecretEncrypted).not.toContain(result.secret);
+    expect(stored.mfaEnabled).toBe(false); // enabled only after verification
+  });
+
+  it('enrollMfa refuses to re-enrol an already-enabled account', async () => {
+    const { service, db } = makeHarness();
+    const user = baseUser({ mfaEnabled: true });
+    db.users.set(user.id, user);
+
+    await expect(service.enrollMfa(user)).rejects.toThrow('MFA is already enabled.');
+  });
+
+  it('verifyMfa completes the login challenge and mints a real access token', async () => {
+    const { service, db, tokens, totp, cipher } = makeHarness();
+    const secret = totp.generateSecret();
+    const user = baseUser({ mfaEnabled: true, mfaSecretEncrypted: cipher.encryptSecret(secret) });
+    db.users.set(user.id, user);
+
+    const challenge = await tokens.signToken({
+      subject: user.id,
+      purpose: 'mfa_challenge',
+      ttlSeconds: 300,
+      sessionId: 'sid-1',
+    });
+    const code = totp.generateCode(secret, Math.floor(Date.now() / 1000 / 30));
+
+    const result = await service.verifyMfa(challenge, code, CTX);
+
+    expect(result.user.mfaEnabled).toBe(true);
+    expect(db.users.get(user.id)!.mfaEnabled).toBe(true);
+    const claims = await tokens.verifyToken(result.accessToken, 'access');
+    expect(claims.sub).toBe(user.id);
+    expect(claims.sid).toBe('sid-1'); // session family carried over
+  });
+
+  it('verifyMfa accepts a first-time enrolment activation via an access token', async () => {
+    const { service, db, tokens, totp } = makeHarness();
+    const user = baseUser();
+    db.users.set(user.id, user);
+    const enrolled = await service.enrollMfa(user);
+
+    const access = await tokens.signToken({ subject: user.id, purpose: 'access', ttlSeconds: 900 });
+    const code = totp.generateCode(enrolled.secret, Math.floor(Date.now() / 1000 / 30));
+
+    const result = await service.verifyMfa(access, code, CTX);
+
+    expect(result.user.mfaEnabled).toBe(true);
+    expect(db.users.get(user.id)!.mfaEnabled).toBe(true);
+  });
+
+  it('verifyMfa rejects a wrong code with one generic message and audits the failure', async () => {
+    const { service, db, tokens, totp, cipher, audit } = makeHarness();
+    const secret = totp.generateSecret();
+    const user = baseUser({ mfaEnabled: true, mfaSecretEncrypted: cipher.encryptSecret(secret) });
+    db.users.set(user.id, user);
+
+    const challenge = await tokens.signToken({
+      subject: user.id,
+      purpose: 'mfa_challenge',
+      ttlSeconds: 300,
+    });
+    const counter = Math.floor(Date.now() / 1000 / 30);
+    const wrong = totp.generateCode(secret, counter - 2); // outside the ±1 drift window
+
+    await expect(service.verifyMfa(challenge, wrong, CTX)).rejects.toThrow('Invalid MFA code.');
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'auth.mfa.failure' }),
+    );
+  });
+
+  it('verifyMfa rejects a step-up token (never accepted here)', async () => {
+    const { service, db, tokens, totp, cipher } = makeHarness();
+    const secret = totp.generateSecret();
+    const user = baseUser({ mfaEnabled: true, mfaSecretEncrypted: cipher.encryptSecret(secret) });
+    db.users.set(user.id, user);
+
+    const stepUp = await tokens.signToken({
+      subject: user.id,
+      purpose: 'step_up',
+      ttlSeconds: 300,
+      jti: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    });
+    const code = totp.generateCode(secret, Math.floor(Date.now() / 1000 / 30));
+
+    await expect(service.verifyMfa(stepUp, code, CTX)).rejects.toThrow('Authentication required.');
+  });
+
+  it('stepUp mints a single-use assertion carrying a jti', async () => {
+    const { service, db, tokens, totp, cipher } = makeHarness();
+    const secret = totp.generateSecret();
+    const user = baseUser({ mfaEnabled: true, mfaSecretEncrypted: cipher.encryptSecret(secret) });
+    db.users.set(user.id, user);
+
+    const code = totp.generateCode(secret, Math.floor(Date.now() / 1000 / 30));
+    const result = await service.stepUp(user.id, code, CTX);
+
+    expect(result.expiresIn).toBe(300);
+    const claims = await tokens.verifyToken(result.stepUpToken, 'step_up');
+    expect(claims.sub).toBe(user.id);
+    expect(claims.jti).toBeDefined();
+    expect(claims.act).toBeUndefined(); // no action-scoping at mint time
+  });
+
+  it('stepUp rejects a wrong code with the generic message and audits the failure', async () => {
+    const { service, db, audit, totp, cipher } = makeHarness();
+    const secret = totp.generateSecret();
+    const user = baseUser({ mfaEnabled: true, mfaSecretEncrypted: cipher.encryptSecret(secret) });
+    db.users.set(user.id, user);
+
+    const counter = Math.floor(Date.now() / 1000 / 30);
+    const wrong = totp.generateCode(secret, counter - 2);
+
+    await expect(service.stepUp(user.id, wrong, CTX)).rejects.toThrow('Invalid MFA code.');
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'auth.step_up.failure' }),
+    );
+  });
+
+  it('stepUp refuses users without MFA enabled', async () => {
+    const { service, db } = makeHarness();
+    const user = baseUser(); // mfaEnabled: false
+    db.users.set(user.id, user);
+
+    await expect(service.stepUp(user.id, '123456', CTX)).rejects.toThrow(
+      'MFA is required to perform this action.',
+    );
   });
 });
