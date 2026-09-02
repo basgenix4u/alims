@@ -20,7 +20,7 @@ overrides:
   file-type: '>=21.3.2'
   webpack: '>=5.104.1'
   '@angular-devkit/core>ajv': '>=8.18.0'
-  '@prisma/config>deepmerge-ts': 8.0.2
+  deepmerge-ts: '>=8.0.0'
 
 importers:
 

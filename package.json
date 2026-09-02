@@ -2,7 +2,7 @@
   "name": "alims",
   "version": "0.1.0",
   "private": true,
-  "description": "ALIMS \u2014 The Global Academic Knowledge Infrastructure. Preserve. Connect. Activate.",
+  "description": "ALIMS — The Global Academic Knowledge Infrastructure. Preserve. Connect. Activate.",
   "author": "basgenix4u",
   "license": "UNLICENSED",
   "packageManager": "pnpm@9.12.0",
@@ -58,7 +58,7 @@
       "file-type": ">=21.3.2",
       "webpack": ">=5.104.1",
       "@angular-devkit/core>ajv": ">=8.18.0",
-      "@prisma/config>deepmerge-ts": "8.0.2"
+      "deepmerge-ts": ">=8.0.0"
     }
   }
 }
