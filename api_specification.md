@@ -340,7 +340,7 @@ type DepositReceipt = { receiptId: string; recordId: string; versionId: string;
 
 ---
 
-## 7. Review Workflow — **Agent 3**
+## 7. Review Workflow — **Agent 2**
 
 ### `GET /tasks?assigned=me&status=pending` → `200 Paginated<ReviewTask>`
 ### `GET /tasks/:id` → `200 ReviewTaskDetail` — record metadata, version under review, declared contributors, prior decisions
@@ -374,7 +374,7 @@ type SimilarityAssessment = { id: string; versionId: string; status: SimilarityS
 
 ---
 
-## 8. Certificates & Public Verification — **Agent 3**
+## 8. Certificates & Public Verification — **Agent 2** (API) · **Agent 3** (public UI)
 
 ### `POST /records/:id/certificate` → `201 Certificate` — registry + **step-up**
 Requires `institutionally_verified` on the target version and a `verified` institution.
@@ -401,7 +401,7 @@ type PublicVerification = {
 
 ---
 
-## 9. Access, Embargo & Requests — **Agent 3**
+## 9. Access, Embargo & Requests — **Agent 2**
 
 ### `PATCH /records/:id/embargo` → `200 { embargoUntil, scope: 'full_text'|'full_record' }`
 Expiry **never** overrides an active rights restriction or an unresolved dispute; owners are notified before any planned access change (PRD §6.6).
@@ -461,7 +461,7 @@ type Passport = {
 
 ---
 
-## 12. Lineage & Suggestions — **Agent 3**
+## 12. Lineage & Suggestions — **Agent 2**
 
 ```
 POST  /relationships                  → 201
@@ -485,7 +485,7 @@ type Suggestion = { id: string; kind: 'related_record'|'possible_relationship'|
 
 ---
 
-## 13. Discovery — **Agent 3** · public
+## 13. Discovery — **Agent 2** (API) · **Agent 3** (public UI)
 
 ### `GET /public/search` → `200 Paginated<PublicRecordSummary>`
 All 14 PRD §6.10 dimensions: `q`, `researchQuestion`, `discipline`, `outputType`, `researcher`, `institution`, `country`, `year`, `methodology`, `verificationLevel`, `accessLevel`, `hasData`, `collaborationStatus`, `opportunityType`.
@@ -503,7 +503,7 @@ type PublicRecordSummary = { nxrId: string; title: string; outputType: OutputTyp
 
 ---
 
-## 14. Collaboration & Activation — **Agent 3** *(Release 2–3)*
+## 14. Collaboration & Activation — **Agent 2** *(Release 2–3)*
 
 ```
 GET|POST /opportunities · GET|PATCH /opportunities/:id
@@ -517,7 +517,7 @@ Charter acceptance is recorded **before** any restricted material is shared and 
 
 ---
 
-## 15. Disputes — **Agent 3**
+## 15. Disputes — **Agent 2**
 
 ```
 POST  /disputes            → 201  { subjectType, subjectId, category, description }
@@ -548,7 +548,7 @@ GET /openapi.json  → OpenAPI 3.1 document
 | §3 Auth, §4 Institutions/Members | Agent 1 | M1 |
 | Policy engine, RLS, audit chain (cross-cutting) | Agent 1 | M1 |
 | §5 Records, §6 Versions/Uploads, §10 Contributors, §11 Passport | Agent 2 | M2 |
-| §7 Review, §8 Certificates, §9 Access, §12 Lineage, §13 Discovery, §14 Collab, §15 Disputes | Agent 3 | M3 |
+| §7 Review, §8 Certificates, §9 Access, §12 Lineage, §13 Discovery, §14 Collab, §15 Disputes | Agent 2 (API) · Agent 3 (public UI) | M3 |
 | All frontend consumption | Agent 4 | M4 |
 | Component contracts & a11y | Agent 6 | M5 |
 | This document, schema, §16 System | Agent 5 | M0/M6 |

@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "2.0.0",
+  "board_version": "2.1.0",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -12,7 +12,7 @@
     "issue_tracker": "https://github.com/basgenix4u/alims/issues"
   },
   "meta": {
-    "last_updated": "2026-08-14T02:00:00Z",
+    "last_updated": "2026-09-02T07:10:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -391,7 +391,7 @@
       "id": "T-100",
       "title": "Auth: register, login, refresh rotation with reuse detection, logout",
       "assignee": "agent_1",
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M1",
       "prd_refs": [
@@ -409,7 +409,9 @@
         "Rate limiting + lockout on login",
         "Unit + integration tests green"
       ],
-      "github_issue": 3
+      "github_issue": 3,
+      "completed_pr": 42,
+      "completed_at": "2026-09-02"
     },
     {
       "id": "T-101",
@@ -530,7 +532,7 @@
       "id": "T-200",
       "title": "Research Record CRUD, draft save, field validation",
       "assignee": "agent_2",
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M2",
       "prd_refs": [
@@ -547,7 +549,9 @@
         "Draft saves without complete publication fields",
         "Official submission blocked until required institutional fields complete"
       ],
-      "github_issue": 9
+      "github_issue": 9,
+      "completed_pr": 36,
+      "completed_at": "2026-09-02"
     },
     {
       "id": "T-201",
@@ -769,7 +773,7 @@
       "id": "T-400",
       "title": "Frontend app shell, routing, i18n scaffolding, API client",
       "assignee": "agent_4",
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M4",
       "prd_refs": [
@@ -787,7 +791,9 @@
         "i18n ready; no hardcoded user-facing strings",
         "Zero TypeScript errors"
       ],
-      "github_issue": 19
+      "github_issue": 19,
+      "completed_pr": 39,
+      "completed_at": "2026-09-02"
     },
     {
       "id": "T-401",
@@ -894,7 +900,7 @@
       "id": "T-600",
       "title": "Design tokens, colour system, typography — WCAG 2.2 AA verified",
       "assignee": "agent_6",
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M5",
       "prd_refs": [
@@ -910,7 +916,9 @@
         "Type scale readable at 200% zoom without loss of function",
         "Tokens exported as CSS variables + Tailwind theme"
       ],
-      "github_issue": 24
+      "github_issue": 24,
+      "completed_pr": 38,
+      "completed_at": "2026-09-02"
     },
     {
       "id": "T-601",
@@ -962,7 +970,7 @@
       "id": "T-410",
       "title": "Public surfaces: search, record page, QR verification",
       "assignee": "agent_3",
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M4",
       "prd_refs": [
@@ -980,7 +988,10 @@
         "Public search exposes only permitted fields",
         "No grade, student ID, similarity or reviewer data reachable",
         "p95 verification under 2s, search under 3s"
-      ]
+      ],
+      "completed_pr": 52,
+      "completed_at": "2026-09-02",
+      "github_issue": 45
     },
     {
       "id": "T-411",
@@ -1004,7 +1015,8 @@
         "Return-for-revision requires a structured comment",
         "No affordance to edit a student's file",
         "Certificate issuance enforces step-up MFA"
-      ]
+      ],
+      "github_issue": 46
     },
     {
       "id": "T-412",
@@ -1026,7 +1038,8 @@
         "Every claim labelled by evidence source",
         "Relationships show type and evidence state; suggestions never shown as fact",
         "No global score or ranking rendered anywhere"
-      ]
+      ],
+      "github_issue": 47
     }
   ],
   "roadblocks": [
@@ -1105,6 +1118,42 @@
       "detail": "agent_3 flagged that its briefing said frontend while the board said backend. Investigation confirmed the BOARD was wrong: the actual team is two backend, two frontend, one UI/UX and one coordinator. agent_3 declined to build frontend under a backend identity because it would violate owned_paths on every file.",
       "resolution": "Board v2.0.0 reassigns agent_3 to FRONTEND (public and staff surfaces) with matching owned_paths and three new tasks T-410/411/412. Its former backend tasks T-300..T-305 moved to agent_2. agent_3's analysis was correct on every point.",
       "raised_at": "2026-08-14T01:50:00Z"
+    },
+    {
+      "id": "RB-007",
+      "raised_by": "agent_5",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Newly published deepmerge-ts advisory (GHSA-ggr8-5vv4-36mx) turned green PR heads red",
+      "raised_at": "2026-09-02",
+      "resolution": "Root pnpm override deepmerge-ts >=8.0.0 via PR #53. Timing drift, no agent regression."
+    },
+    {
+      "id": "RB-008",
+      "raised_by": "agent_3",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "/verify route ownership collision between agent_4 (PR #39) and agent_3 (T-410)",
+      "raised_at": "2026-08-14",
+      "resolution": "Ruling: agent_3 owns apps/web/src/app/verify/** going forward. agent_4 handed over the landing route in PR #39; routes composed cleanly at merge."
+    },
+    {
+      "id": "RB-009",
+      "raised_by": "agent_3",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Public discovery contracts missing from @alims/contracts (spec 13)",
+      "raised_at": "2026-08-14",
+      "resolution": "agent_5 ported agent_3's verbatim schemas into packages/contracts/src/discovery.ts in the round-one closeout PR; agent_3 to swap local stubs for @alims/contracts imports with no shape change."
+    },
+    {
+      "id": "RB-010",
+      "raised_by": "agent_3",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Design tokens (T-600) not yet merged when public surfaces were built",
+      "raised_at": "2026-08-14",
+      "resolution": "Self-resolved: PR #38 merged before #52; agent_3's CSS fallbacks equal spec values so tokens took over with no visual change."
     }
   ],
   "decisions": [
@@ -1210,6 +1259,66 @@
       "method": "merge",
       "ci": "green",
       "summary": "Database security layer promoted to main."
+    },
+    {
+      "pr": 42,
+      "task": "T-100",
+      "branch": "feat/agent-1/auth-core",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "Auth core: Argon2id, rotating refresh with reuse detection, JWT guard, audit service."
+    },
+    {
+      "pr": 36,
+      "task": "T-200",
+      "branch": "feat/agent-2/record-crud",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "Research record CRUD with draft semantics and server-authoritative validation."
+    },
+    {
+      "pr": 38,
+      "task": "T-600",
+      "branch": "design/agent-6/ui-ux-blueprints",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "UI/UX specification v1.0.0 and WCAG-verified design token system."
+    },
+    {
+      "pr": 53,
+      "task": "T-000",
+      "branch": "fix/agent-5/audit-deepmerge-ts",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "Security: deepmerge-ts override for GHSA-ggr8-5vv4-36mx (advisory timing drift)."
+    },
+    {
+      "pr": 39,
+      "task": "T-400",
+      "branch": "feat/agent-4/frontend-interactives",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "App shell, i18n, wizard, WebGL lineage, dashboards; globals.css conflict vs #38 resolved by agent_5; agent_4 also self-fixed deepmerge override concurrently with #53 (dev-canonical kept)."
+    },
+    {
+      "pr": 52,
+      "task": "T-410",
+      "branch": "feat/agent-3/public-surfaces",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "Public surfaces: /search, /records/[nxrId], /verify/[qrToken] with status vocabulary; three roadblocks raised and resolved."
     }
   ],
   "role_summary": {
