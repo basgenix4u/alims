@@ -21,7 +21,8 @@ export type AuditAction =
   | 'auth.password.reset_completed'
   | 'auth.mfa.enrolled'
   | 'auth.mfa.verified'
-  | 'auth.step_up.granted';
+  | 'auth.step_up.granted'
+  | 'policy.denied';
 
 export interface AuditInput {
   action: AuditAction;
