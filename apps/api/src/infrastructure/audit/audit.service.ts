@@ -21,7 +21,10 @@ export type AuditAction =
   | 'auth.password.reset_completed'
   | 'auth.mfa.enrolled'
   | 'auth.mfa.verified'
+  | 'auth.mfa.failure'
   | 'auth.step_up.granted'
+  | 'auth.step_up.failure'
+  | 'auth.step_up.consumed'
   | 'policy.denied';
 
 export interface AuditInput {
@@ -139,6 +142,20 @@ export class AuditService {
   private isSensitive(key: string): boolean {
     const normalised = key.toLowerCase().replace(/[^a-z]/g, '');
     return REDACTED_KEY_FRAGMENTS.some((fragment) => normalised.includes(fragment));
+  }
+
+  /**
+   * True when an audit event with the given action and subject id exists.
+   *
+   * Used by StepUpGuard to enforce single-use step-up assertions (T-101):
+   * the append-only audit trail doubles as the replay ledger.
+   */
+  async eventExists(action: AuditAction, subjectId: string): Promise<boolean> {
+    const row = await this.prisma.auditEvent.findFirst({
+      where: { action, subjectId },
+      select: { seq: true },
+    });
+    return row !== null;
   }
 
   /**

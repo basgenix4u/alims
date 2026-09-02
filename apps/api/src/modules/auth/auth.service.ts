@@ -1,4 +1,5 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { UserAccount } from '@prisma/client';
 import type { LoginInput, RegisterInput, UserSummary } from '@alims/contracts';
@@ -6,7 +7,9 @@ import type { Env } from '../../config/env';
 import { AuditService } from '../../infrastructure/audit/audit.service';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { PasswordService } from './password.service';
-import { TokenService } from './token.service';
+import { SecretCipherService } from './secret-cipher.service';
+import { TokenService, type AccessTokenClaims } from './token.service';
+import { TotpService } from './totp.service';
 
 /** Request metadata used for audit and throttling decisions. */
 export interface RequestContext {
@@ -28,6 +31,20 @@ export interface RegisterResult {
   verificationEmailSent: true;
 }
 
+/** Response for MFA enrolment: the plaintext secret is shown exactly once. */
+export interface MfaEnrollResult {
+  secret: string;
+  otpauthUrl: string;
+  recoveryCodes: string[];
+}
+
+/** Response for completing MFA and for step-up. */
+export interface MfaSessionResult {
+  accessToken: string;
+  expiresIn: number;
+  user: UserSummary;
+}
+
 /**
  * One message for every credential failure.
  *
@@ -35,6 +52,7 @@ export interface RegisterResult {
  * enumeration oracle (OWASP A07 / api_specification.md §3).
  */
 const GENERIC_CREDENTIAL_ERROR = 'Email or password is incorrect.';
+const GENERIC_MFA_ERROR = 'Invalid MFA code.';
 
 @Injectable()
 export class AuthService {
@@ -46,6 +64,8 @@ export class AuthService {
     private readonly tokens: TokenService,
     private readonly audit: AuditService,
     private readonly config: ConfigService<Env, true>,
+    private readonly totp: TotpService,
+    private readonly cipher: SecretCipherService,
   ) {}
 
   /**
@@ -350,6 +370,165 @@ export class AuthService {
 
   async findUserById(userId: string): Promise<UserAccount | null> {
     return this.prisma.userAccount.findUnique({ where: { id: userId } });
+  }
+
+  /**
+   * Start MFA enrolment (T-101).
+   *
+   * Generates a TOTP secret, encrypts it at rest (AES-256-GCM), and returns
+   * the plaintext secret + otpauth URI exactly once. The secret is not active
+   * until /auth/mfa/verify confirms possession with a valid code.
+   */
+  async enrollMfa(user: UserAccount): Promise<MfaEnrollResult> {
+    if (user.mfaEnabled) {
+      throw new ForbiddenException('MFA is already enabled.');
+    }
+
+    const secret = this.totp.generateSecret();
+    const recoveryCodes = this.totp.generateRecoveryCodes();
+
+    await this.prisma.userAccount.update({
+      where: { id: user.id },
+      data: { mfaSecretEncrypted: this.cipher.encryptSecret(secret) },
+    });
+
+    await this.audit.record({
+      action: 'auth.mfa.enrolled',
+      subjectType: 'user_account',
+      subjectId: user.id,
+      actorUserId: user.id,
+      payload: { outcome: 'awaiting_verification' },
+    });
+
+    return { secret, otpauthUrl: this.totp.otpauthUrl(user.email, secret), recoveryCodes };
+  }
+
+  /**
+   * Complete MFA with a valid TOTP code, then mint the real access token.
+   *
+   * Accepts two token purposes, covering both MFA moments:
+   *   - the limited `mfa_challenge` token issued by login when MFA is
+   *     already enabled (the login continuation), and
+   *   - a normal `access` token (first-time enrolment activation: the user
+   *     enrolled, then confirms possession of the authenticator).
+   *
+   * A step-up token is never accepted here.
+   */
+  async verifyMfa(token: string, totpCode: string, ctx: RequestContext): Promise<MfaSessionResult> {
+    const { claims, via } = await this.resolveMfaToken(token);
+
+    const user = await this.prisma.userAccount.findUnique({ where: { id: claims.sub } });
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+
+    const secret = user.mfaSecretEncrypted ? this.cipher.tryDecrypt(user.mfaSecretEncrypted) : null;
+    if (!secret || !this.totp.verify(secret, totpCode)) {
+      await this.audit.record({
+        action: 'auth.mfa.failure',
+        subjectType: 'user_account',
+        subjectId: user.id,
+        actorUserId: user.id,
+        payload: { reason: secret ? 'invalid_code' : 'no_pending_enrolment' },
+        ip: ctx.ip,
+        userAgent: ctx.userAgent,
+      });
+      throw new UnauthorizedException(GENERIC_MFA_ERROR);
+    }
+
+    await this.prisma.userAccount.update({ where: { id: user.id }, data: { mfaEnabled: true } });
+
+    await this.audit.record({
+      action: 'auth.mfa.verified',
+      subjectType: 'user_account',
+      subjectId: user.id,
+      actorUserId: user.id,
+      payload: { via },
+    });
+
+    // The session family (sid) is carried over from the presented token.
+    const accessToken = await this.tokens.signToken({
+      subject: user.id,
+      purpose: 'access',
+      ttlSeconds: this.tokens.accessTokenTtlSeconds,
+      sessionId: claims.sid,
+    });
+
+    return {
+      accessToken,
+      expiresIn: this.tokens.accessTokenTtlSeconds,
+      user: this.toSummary({ ...user, mfaEnabled: true }),
+    };
+  }
+
+  /** Accept an mfa_challenge or access token; reject anything else. */
+  private async resolveMfaToken(
+    raw: string,
+  ): Promise<{ claims: AccessTokenClaims; via: 'access' | 'mfa_challenge' }> {
+    try {
+      const claims = await this.tokens.verifyToken(raw, 'mfa_challenge');
+      return { claims, via: 'mfa_challenge' };
+    } catch {
+      // not a challenge token — try a normal access token
+    }
+    try {
+      const claims = await this.tokens.verifyToken(raw, 'access');
+      return { claims, via: 'access' };
+    } catch {
+      throw new UnauthorizedException('Authentication required.');
+    }
+  }
+
+  /**
+   * Issue a short-lived, single-use step-up assertion (T-101).
+   *
+   * The token carries a fresh `jti`; StepUpGuard consumes it exactly once and
+   * records the consumption in the append-only audit trail, so a replayed
+   * assertion is rejected and permanently logged.
+   */
+  async stepUp(
+    userId: string,
+    totpCode: string,
+    ctx: RequestContext,
+  ): Promise<{ stepUpToken: string; expiresIn: number }> {
+    const user = await this.prisma.userAccount.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+    if (!user.mfaEnabled) {
+      throw new ForbiddenException('MFA is required to perform this action.');
+    }
+
+    const secret = user.mfaSecretEncrypted ? this.cipher.tryDecrypt(user.mfaSecretEncrypted) : null;
+    if (!secret || !this.totp.verify(secret, totpCode)) {
+      await this.audit.record({
+        action: 'auth.step_up.failure',
+        subjectType: 'user_account',
+        subjectId: user.id,
+        actorUserId: user.id,
+        payload: { reason: secret ? 'invalid_code' : 'secret_unavailable' },
+        ip: ctx.ip,
+        userAgent: ctx.userAgent,
+      });
+      throw new UnauthorizedException(GENERIC_MFA_ERROR);
+    }
+
+    const stepUpToken = await this.tokens.signToken({
+      subject: user.id,
+      purpose: 'step_up',
+      ttlSeconds: this.tokens.stepUpTtlSeconds,
+      jti: randomUUID(),
+    });
+
+    await this.audit.record({
+      action: 'auth.step_up.granted',
+      subjectType: 'user_account',
+      subjectId: user.id,
+      actorUserId: user.id,
+      payload: { ttlSeconds: this.tokens.stepUpTtlSeconds },
+    });
+
+    return { stepUpToken, expiresIn: this.tokens.stepUpTtlSeconds };
   }
 
   /** Count a failed attempt and lock the account once the threshold is hit. */
