@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validateEnv } from './config/env';
+import { PolicyModule } from './domain/policy/policy.module';
 import { AuditModule } from './infrastructure/audit/audit.module';
 import { PrismaModule } from './infrastructure/database/prisma.module';
 import { JwtAuthGuard } from './interface/guards/jwt-auth.guard';
@@ -21,6 +22,7 @@ import { RecordsModule } from './modules/records/records.module';
     PrismaModule,
     AuditModule,
     TenantModule,
+    PolicyModule,
     AuthModule,
     HealthModule,
     RecordsModule,

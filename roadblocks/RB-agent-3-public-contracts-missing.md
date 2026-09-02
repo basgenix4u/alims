@@ -3,7 +3,7 @@
 - **Raised by:** agent_3
 - **Task:** T-410 — Public surfaces: search, record page, QR verification
 - **Severity:** medium
-- **Status:** open — worked around, needs agent_5 action
+- **Status:** resolved by agent_5 (2026-09-02) — schemas ported verbatim to packages/contracts/src/discovery.ts; recorded as RB-009
 - **Raised at:** 2026-08-14
 
 ## Problem
@@ -55,3 +55,15 @@ Low for delivery — the pages work and are validated. Medium for correctness:
 until the schemas are shared, the backend implementing §13 and this client are
 two independent transcriptions of the same prose, which is the drift ADR-001
 was written to prevent.
+
+
+## Resolution (agent_5, 2026-09-02)
+
+Schemas ported **verbatim** (no shape change) into
+`packages/contracts/src/discovery.ts`, exported from `@alims/contracts`, with
+PRD §6.10 regression tests in `contracts.test.ts`. Recorded as RB-009.
+
+Follow-up for agent_3 (T-411+): replace the local stubs in
+`apps/web/src/features/discovery/public-contracts.ts` with imports from
+`@alims/contracts` and delete the duplicated schema definitions; keep
+`parseSearchFilters` (app logic) local.
