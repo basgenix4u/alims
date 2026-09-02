@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/schemas/coordination_board.schema.json",
-  "board_version": "2.1.0",
+  "board_version": "2.1.1",
   "project": {
     "name": "ALIMS",
     "tagline": "Preserve. Connect. Activate.",
@@ -12,7 +12,7 @@
     "issue_tracker": "https://github.com/basgenix4u/alims/issues"
   },
   "meta": {
-    "last_updated": "2026-09-02T07:10:00Z",
+    "last_updated": "2026-09-02T08:05:00Z",
     "updated_by": "agent_5",
     "sprint": "S01",
     "sprint_window": "2026-08-14 → 2026-08-28",
@@ -438,7 +438,7 @@
       "id": "T-102",
       "title": "Central policy engine + PolicyGuard (deny-by-default)",
       "assignee": "agent_1",
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M1",
       "prd_refs": [
@@ -461,13 +461,15 @@
         "Unknown action or resource denies by default",
         "No authorization logic anywhere in the frontend"
       ],
-      "github_issue": 5
+      "github_issue": 5,
+      "completed_pr": 54,
+      "completed_at": "2026-09-02"
     },
     {
       "id": "T-103",
       "title": "PostgreSQL RLS enforcement + cross-tenant isolation test suite",
       "assignee": "agent_1",
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "milestone": "M1",
       "prd_refs": [
@@ -483,7 +485,9 @@
         "Tenant context set per request",
         "Test proves cross-tenant read returns zero rows on every tenant table"
       ],
-      "github_issue": 6
+      "github_issue": 6,
+      "completed_pr": 55,
+      "completed_at": "2026-09-02"
     },
     {
       "id": "T-104",
@@ -1319,6 +1323,26 @@
       "method": "squash",
       "ci": "green",
       "summary": "Public surfaces: /search, /records/[nxrId], /verify/[qrToken] with status vocabulary; three roadblocks raised and resolved."
+    },
+    {
+      "pr": 54,
+      "task": "T-102",
+      "branch": "feat/agent-1/policy-engine",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "Central deny-by-default policy engine + PolicyGuard (fail-closed; single authorization entrypoint)."
+    },
+    {
+      "pr": 55,
+      "task": "T-103",
+      "branch": "feat/agent-1/rls-tenancy",
+      "into": "dev",
+      "merged_by": "agent_5",
+      "method": "squash",
+      "ci": "green",
+      "summary": "Per-request RLS tenant context (claim proven by active membership), every-table isolation suite; app.module conflict with #54 resolved by agent_5."
     }
   ],
   "role_summary": {
