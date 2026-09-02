@@ -1,14 +1,22 @@
+@import '../styles/tokens.css';
+
 /*
- * Colour values prefer apps/web/src/styles/tokens.css (Agent 6, T-600 / PR #38).
- * Fallbacks use the Tailwind theme so this file contains no raw hex.
+ * Colour values come from apps/web/src/styles/tokens.css (Agent 6, T-600 / PR #38).
+ * Resolved by agent_5 at merge: tokens.css is the single colour source.
  */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* PRD §9.3 — visible focus states are a hard requirement, not a preference. */
+/*
+ * ALIMS base styles — contract: ui_ux_specification.md (Agent 6, T-600).
+ * Tokens live in ./tokens.css and are the ONLY colour source.
+ */
+
+/* PRD §9.3 — visible focus states are a hard requirement, not a preference.
+ * Focus ring: brand-700 = 6.37:1 against parchment (WCAG 1.4.11 >= 3:1). */
 :focus-visible {
-  outline: 3px solid var(--color-focus, theme(colors.brand.DEFAULT));
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
