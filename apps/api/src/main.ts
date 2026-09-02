@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { corsOrigins, validateEnv } from './config/env';
 import { ProblemDetailsFilter } from './interface/filters/problem-details.filter';
+import { tenantContextMiddleware } from './interface/middleware/tenant-context';
 
 async function bootstrap(): Promise<void> {
   const env = validateEnv(process.env);
@@ -19,6 +20,10 @@ async function bootstrap(): Promise<void> {
   // 'loopback, linklocal, uniquelocal' trusts only private hops, so a
   // client cannot spoof the header from the public internet.
   app.set('trust proxy', 'loopback, linklocal, uniquelocal');
+
+  // Tenant context store (T-103). Registered first so every request runs
+  // inside an AsyncLocalStorage store that guards can fill in later.
+  app.use(tenantContextMiddleware);
 
   // Required to read the httpOnly refresh cookie (contract §1).
   app.use(cookieParser());
