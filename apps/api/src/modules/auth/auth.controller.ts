@@ -8,6 +8,7 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
   UsePipes,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -26,6 +27,8 @@ import {
   type AuthenticatedUser,
 } from '../../interface/decorators/current-user.decorator';
 import { Public } from '../../interface/decorators/public.decorator';
+import { RequireAction } from '../../interface/decorators/require-action.decorator';
+import { PolicyGuard } from '../../interface/guards/policy.guard';
 import { ZodValidationPipe } from '../../interface/pipes/zod-validation.pipe';
 import { AuthService, type AuthSession, type RequestContext } from './auth.service';
 import { REFRESH_COOKIE_NAME, CookieService } from './cookie.service';
@@ -116,6 +119,8 @@ export class AuthController {
   }
 
   @Get('me')
+  @UseGuards(PolicyGuard)
+  @RequireAction('profile:read_own', { ownerFrom: 'self' })
   @ApiOperation({ summary: 'The authenticated user' })
   async me(@CurrentUser() principal: AuthenticatedUser): Promise<UserSummary> {
     const user = await this.auth.findUserById(principal.userId);
