@@ -6,6 +6,8 @@ import { validateEnv } from './config/env';
 import { AuditModule } from './infrastructure/audit/audit.module';
 import { PrismaModule } from './infrastructure/database/prisma.module';
 import { JwtAuthGuard } from './interface/guards/jwt-auth.guard';
+import { TenantGuard } from './interface/guards/tenant.guard';
+import { TenantModule } from './interface/middleware/tenant.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { RecordsModule } from './modules/records/records.module';
@@ -18,6 +20,7 @@ import { RecordsModule } from './modules/records/records.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     PrismaModule,
     AuditModule,
+    TenantModule,
     AuthModule,
     HealthModule,
     RecordsModule,
@@ -28,6 +31,9 @@ import { RecordsModule } from './modules/records/records.module';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     // Deny-by-default. Routes opt out explicitly with @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // After authentication: resolve the tenant context for the request
+    // (T-103). Public routes have no user and stay in the system context.
+    { provide: APP_GUARD, useClass: TenantGuard },
   ],
 })
 export class AppModule {}
