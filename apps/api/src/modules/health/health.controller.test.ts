@@ -2,19 +2,28 @@ import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { HealthController } from './health.controller';
 
 describe('Health endpoints (smoke test)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ controllers: [HealthController] }).compile();
+    // Stubbed so the smoke test stays a pure unit test with no live database.
+    const prismaStub = { isHealthy: async (): Promise<boolean> => true };
+
+    const moduleRef = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [{ provide: PrismaService, useValue: prismaStub }],
+    }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
     await app.init();
   });
 
-  afterAll(async () => { await app.close(); });
+  afterAll(async () => {
+    await app.close();
+  });
 
   it('GET /api/v1/health returns 200 and status ok', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
