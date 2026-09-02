@@ -1,5 +1,9 @@
 @import '../styles/tokens.css';
 
+/*
+ * Colour values come from apps/web/src/styles/tokens.css (Agent 6, T-600 / PR #38).
+ * Resolved by agent_5 at merge: tokens.css is the single colour source.
+ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -24,4 +28,69 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  z-index: var(--z-skip-link, 600);
+}
+.skip-link:focus {
+  left: var(--space-4, 1rem);
+  top: var(--space-4, 1rem);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-primary-bg, theme(colors.brand.DEFAULT));
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  color: var(--color-primary-fg, theme(colors.surface.DEFAULT));
+}
+
+.input {
+  width: 100%;
+  border: 2px solid var(--color-border-input, theme(colors.surface.border));
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface, theme(colors.surface.DEFAULT));
+  color: var(--color-text, theme(colors.ink.DEFAULT));
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+}
+.input:focus-visible {
+  border-color: var(--color-focus, theme(colors.brand.DEFAULT));
+}
+
+.btn-primary,
+.btn-secondary {
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  font-weight: 600;
+}
+.btn-primary {
+  background: var(--color-primary-bg, theme(colors.brand.DEFAULT));
+  color: var(--color-primary-fg, theme(colors.surface.DEFAULT));
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+}
+.btn-secondary {
+  border: 2px solid var(--color-border-strong, theme(colors.surface.border));
+  background: var(--color-surface, theme(colors.surface.DEFAULT));
+  color: var(--color-text, theme(colors.ink.DEFAULT));
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+}
+
+.tone-advisory {
+  background: var(--status-advisory-bg);
+  color: var(--status-advisory-fg);
+  border-color: var(--status-advisory-fg);
+}
+.tone-danger {
+  background: var(--color-danger-subtle-bg);
+  color: var(--color-danger-subtle-fg);
+  border-color: var(--color-danger-bg);
+}
+.tone-verified {
+  background: var(--status-verified-bg);
+  color: var(--status-verified-fg);
+  border-color: var(--status-verified-fg);
 }
