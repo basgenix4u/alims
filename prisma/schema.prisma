@@ -588,6 +588,12 @@ model ResearchRecord {
   datasetLinks      String[]          @map("dataset_links")
   codeLinks         String[]          @map("code_links")
   languages         String[]
+  equipmentUsed     String?           @map("equipment_used") @db.VarChar(500)
+  externalPartner   String?           @map("external_partner") @db.VarChar(300)
+  publicationRefs   String[]          @default([]) @map("publication_refs")
+  patentRefs        String[]          @default([]) @map("patent_refs")
+  relatedRecordIds  String[]          @default([]) @map("related_record_ids")
+  supervisorUserIds String[]          @default([]) @map("supervisor_user_ids")
   createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
