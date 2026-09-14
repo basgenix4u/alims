@@ -11,6 +11,7 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../../interface/decorators/current-user.decorator';
 import { RecordService } from '../application/record.service';
 import { RecordDraftInput, ResearchRecord } from '../domain/record.entity';
 import { RecordsErrorFilter } from './records-error.filter';
@@ -18,10 +19,10 @@ import { RecordsErrorFilter } from './records-error.filter';
 /**
  * HTTP adapter for the Records domain (api_specification.md §5).
  *
- * Auth and the request-scoped `ownerUserId` are stubbed to a fixed
- * dev actor until the auth module lands; the service still enforces owner
- * scoping so the wiring is already correct. Errors are mapped to RFC 9457
- * Problem Details via the global filter.
+ * Every route is authenticated (global JwtAuthGuard, deny-by-default) and
+ * scoped to the requesting user via `@CurrentUser()` — the record owner is
+ * never a client-supplied value. Errors are mapped to RFC 9457 Problem
+ * Details; cross-tenant misses surface as 404 (no existence leak).
  */
 @ApiTags('records')
 @Controller('records')
@@ -29,24 +30,23 @@ import { RecordsErrorFilter } from './records-error.filter';
 export class RecordController {
   constructor(@Inject(RecordService) private readonly records: RecordService) {}
 
-  /** Dev actor until the records module consumes the auth context. Replaced by `@CurrentUser()`. */
-  private get devOwnerUserId(): string {
-    return process.env.DEV_OWNER_USER_ID ?? '00000000-0000-0000-0000-000000000000';
-  }
-
   @Post()
   @HttpCode(201)
-  async create(@Body() body: RecordDraftInput): Promise<ResearchRecord> {
-    return this.records.createDraft(this.devOwnerUserId, body);
+  async create(
+    @CurrentUser() user: { userId: string },
+    @Body() body: RecordDraftInput,
+  ): Promise<ResearchRecord> {
+    return this.records.createDraft(user.userId, body);
   }
 
   @Get()
   async list(
+    @CurrentUser() user: { userId: string },
     @Query('limit') limit?: string,
     @Query('cursor') cursor?: string,
   ) {
     const parsedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    return this.records.listMine(this.devOwnerUserId, {
+    return this.records.listMine(user.userId, {
       limit: parsedLimit,
       cursor: cursor ?? null,
     });
@@ -58,19 +58,29 @@ export class RecordController {
   }
 
   @Get(':id')
-  async get(@Param('id') id: string): Promise<ResearchRecord> {
-    return this.records.getById(id, this.devOwnerUserId);
+  async get(
+    @CurrentUser() user: { userId: string },
+    @Param('id') id: string,
+  ): Promise<ResearchRecord> {
+    return this.records.getById(id, user.userId);
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() body: Partial<RecordDraftInput>) {
-    return this.records.updateDraft(id, this.devOwnerUserId, body);
+  async update(
+    @CurrentUser() user: { userId: string },
+    @Param('id') id: string,
+    @Body() body: Partial<RecordDraftInput>,
+  ) {
+    return this.records.updateDraft(id, user.userId, body);
   }
 
   @Post(':id/submit')
   @HttpCode(200)
-  async submit(@Param('id') id: string) {
-    const record = await this.records.getById(id, this.devOwnerUserId);
+  async submit(
+    @CurrentUser() user: { userId: string },
+    @Param('id') id: string,
+  ) {
+    const record = await this.records.getById(id, user.userId);
     this.records.assertReadyForSubmission(record);
     // Full submit orchestration (workflow instance, version, receipt) lands with the workflow engine.
     return { record, ready: true };

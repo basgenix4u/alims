@@ -16,9 +16,9 @@ export type Provenance = 'native' | 'historical_digitisation' | 'imported';
  * ResearchRecord aggregate root (api_specification.md §5, PRD §6.2).
  *
  * Mirrors `prisma/schema.prisma` `ResearchRecord` + the API surface. The
- * controller/service only ever touch this in-memory aggregate via the
- * `RecordRepository` port, so a Prisma-backed implementation can be swapped
- * in without touching application logic.
+ * controller/service only ever touch this aggregate via the
+ * `RecordRepository` port, so persistence can be swapped (in-memory for
+ * tests, Prisma + RLS in production) without touching application logic.
  */
 export interface ResearchRecord {
   id: string;
@@ -27,7 +27,8 @@ export interface ResearchRecord {
   departmentId: string | null;
   programmeId: string | null;
   sessionId: string | null;
-  ownerUserId: string | null;
+  /** The depositor. NOT NULL in the database and required by the RLS insert policy — a record always has an owner. */
+  ownerUserId: string;
   outputType: OutputType;
   title: string;
   abstract: string | null;
