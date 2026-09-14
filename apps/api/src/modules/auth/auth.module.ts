@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { CookieService } from './cookie.service';
+import { RecoveryCodeService } from './recovery-code.service';
 import { PasswordService } from './password.service';
 import { SecretCipherService } from './secret-cipher.service';
 import { TokenService } from './token.service';
@@ -14,7 +15,7 @@ import { TotpService } from './totp.service';
  */
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, PasswordService, TokenService, CookieService, TotpService, SecretCipherService],
+  providers: [AuthService, PasswordService, TokenService, CookieService, TotpService, SecretCipherService, RecoveryCodeService],
   exports: [AuthService, TokenService, PasswordService],
 })
 export class AuthModule {}
