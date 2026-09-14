@@ -1,0 +1,228 @@
+name: CI
+
+# Quality gate for every pull request. Nothing merges into dev or main
+# without compiling, linting, passing unit tests, and passing the
+# database security suite against a real PostgreSQL.
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9.12.0'
+
+jobs:
+  quality:
+    name: Build · Typecheck · Lint · Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      # Build first: apps depend on packages/contracts being compiled.
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Assert no mock data reached the PR
+        run: |
+          # PRD requires live integration, not placeholders. Scan source
+          # only; test fixtures and docs are legitimately allowed to mock.
+          set +e
+          HITS=$(grep -rInE "MOCK_DATA|mockData|FAKE_|TODO: replace with real|hardcoded response" \
+            --include="*.ts" --include="*.tsx" \
+            --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.next \
+            apps/*/src packages/*/src 2>/dev/null | grep -v "\.test\.ts")
+          if [ -n "$HITS" ]; then
+            echo "::error::Mock data found in application source."
+            echo "$HITS"
+            exit 1
+          fi
+          echo "No mock data in application source."
+
+  database:
+    name: Database security suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: alims_owner
+          POSTGRES_PASSWORD: alims_dev_password
+          POSTGRES_DB: alims
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U alims_owner -d alims"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install psql client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgresql://alims_owner:alims_dev_password@localhost:5432/alims
+          DATABASE_MIGRATION_URL: postgresql://alims_owner:alims_dev_password@localhost:5432/alims
+        run: pnpm db:deploy
+
+      # The suite runs as alims_app to prove RLS holds for the real
+      # application role, and needs a superuser path for ground truth.
+      - name: Verify application role cannot bypass RLS
+        env:
+          PGPASSWORD: alims_dev_password
+        run: |
+          ROLE=$(psql -h localhost -U alims_owner -d alims -qtA \
+            -c "SELECT rolsuper::text||','||rolbypassrls::text FROM pg_roles WHERE rolname='alims_app';")
+          echo "alims_app -> super,bypassrls = $ROLE"
+          if [ "$ROLE" != "false,false" ]; then
+            echo "::error::alims_app must be NOSUPERUSER and NOT BYPASSRLS or RLS fails open (PRD 6.1)."
+            exit 1
+          fi
+
+      - name: Integration tests (RLS, immutability, audit chain)
+        env:
+          DATABASE_URL: postgresql://alims_app:alims_dev_password@localhost:5432/alims
+          DATABASE_MIGRATION_URL: postgresql://alims_owner:alims_dev_password@localhost:5432/alims
+          PGPASSWORD: alims_dev_password
+          CI_SUPERUSER_DSN: postgresql://alims_owner:alims_dev_password@localhost:5432/alims
+        run: pnpm test:integration
+
+      - name: Verify audit chain integrity
+        env:
+          PGPASSWORD: alims_dev_password
+        run: |
+          BROKEN=$(psql -h localhost -U alims_owner -d alims -qtA \
+            -c "SELECT count(*) FROM verify_audit_chain();")
+          echo "broken audit links: $BROKEN"
+          if [ "$BROKEN" != "0" ]; then
+            echo "::error::Audit hash chain is broken (PRD 9.1)."
+            exit 1
+          fi
+
+  prd-invariants:
+    name: PRD invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # These are the product rules most likely to be eroded by a
+      # well-meaning change. Cheap to check, expensive to get wrong.
+      - name: No forbidden score columns in the schema
+        run: |
+          set +e
+          HITS=$(grep -inE "contributionScore|qualityScore|integrityScore|researcherScore|reputationScore" \
+            prisma/schema.prisma)
+          if [ -n "$HITS" ]; then
+            echo "::error::PRD 1.5.3 / 6.7 / 6.8 forbid aggregate scores. Found:"
+            echo "$HITS"
+            exit 1
+          fi
+          echo "No forbidden score columns."
+
+      - name: CRediT taxonomy is exactly 14 roles
+        run: |
+          COUNT=$(awk '/^enum CreditRole \{/,/^\}/' prisma/schema.prisma \
+            | grep -cE '^\s{2}[a-z_]+$')
+          echo "CRediT roles in schema: $COUNT"
+          if [ "$COUNT" != "14" ]; then
+            echo "::error::PRD 6.7 requires exactly 14 NISO CRediT roles, found $COUNT."
+            exit 1
+          fi
+
+      - name: Similarity subsystem cannot mutate record status
+        run: |
+          # PRD 6.5 / ADR-004: a status transition must carry a human
+          # decision. Fail if similarity code writes record status.
+          set +e
+          HITS=$(grep -rInE "status *[:=] *['\"]?(institutionally_verified|verification_revoked|withdrawn)" \
+            --include="*.ts" apps/api/src apps/worker/src 2>/dev/null \
+            | grep -iE "similarit|plagiar")
+          if [ -n "$HITS" ]; then
+            echo "::error::PRD 6.5 forbids automated status changes from similarity signals."
+            echo "$HITS"
+            exit 1
+          fi
+          echo "Similarity subsystem has no status-write path."
+
+      - name: Public verification exposes only approved fields
+        run: |
+          set +e
+          HITS=$(grep -rInE "grade|studentId|similarityScore|reviewerNotes" \
+            --include="*.ts" apps/api/src/modules/public 2>/dev/null)
+          if [ -n "$HITS" ]; then
+            echo "::error::PRD 6.4 forbids private data on the public verification path."
+            echo "$HITS"
+            exit 1
+          fi
+          echo "Public projection is clean."
+
+  security:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit for high and critical advisories
+        run: pnpm audit --audit-level=high

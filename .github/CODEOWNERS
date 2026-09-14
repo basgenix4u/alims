@@ -1,0 +1,9 @@
+# Default owner — everything routes here for review.
+*                               @basgenix4u
+
+# The API contract and the data model are the two files where a mistake is
+# most expensive; they always need a deliberate review pass.
+/api_specification.md           @basgenix4u
+/prisma/schema.prisma           @basgenix4u
+/prisma/migrations/             @basgenix4u
+/packages/contracts/            @basgenix4u
