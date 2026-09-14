@@ -3,6 +3,8 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RecordsModule } from '../records.module';
+import { RECORD_REPOSITORY } from '../domain/record.repository';
+import { InMemoryRecordRepository } from '../infrastructure/in-memory-record.repository';
 
 const validBody = {
   outputType: 'thesis',
@@ -19,10 +21,22 @@ describe('Records HTTP API (api_specification.md §5)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [RecordsModule],
-    }).compile();
+    })
+      // HTTP behaviour only — persistence is covered by the integration
+      // suite against a real PostgreSQL.
+      .overrideProvider(RECORD_REPOSITORY)
+      .useClass(InMemoryRecordRepository)
+      .compile();
 
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
+    // The global JwtAuthGuard lives in AppModule, which this test does not
+    // import; stand in for it so @CurrentUser() resolves a fixed principal.
+    const OWNER = '33333333-3333-3333-3333-333333333333';
+    app.use((req, _res, next) => {
+      req.user = { userId: OWNER, sessionId: null };
+      next();
+    });
     await app.init();
   });
 

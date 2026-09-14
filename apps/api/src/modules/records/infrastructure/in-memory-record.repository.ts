@@ -3,12 +3,12 @@ import { ResearchRecord } from '../domain/record.entity';
 import { RecordRepository } from '../domain/record.repository';
 
 /**
- * In-memory RecordRepository.
+ * In-memory RecordRepository — the test double.
  *
- * Used for tests and the no-DB dev loop (RB-001: no Docker in sandbox). The
- * production implementation swaps to a Prisma-backed repository
- * (append-only versioning) which reuses the same `RecordRepository` port, so
- * the application layer is unaffected.
+ * Unit and HTTP tests bind this via provider override; production binds
+ * `PrismaRecordRepository` (PostgreSQL with row-level security). Both
+ * implement the same `RecordRepository` port, so the application layer
+ * cannot tell them apart.
  */
 @Injectable()
 export class InMemoryRecordRepository implements RecordRepository {
