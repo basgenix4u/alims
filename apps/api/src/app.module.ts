@@ -10,6 +10,7 @@ import { JwtAuthGuard } from './interface/guards/jwt-auth.guard';
 import { TenantGuard } from './interface/guards/tenant.guard';
 import { TenantModule } from './interface/middleware/tenant.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { InstitutionsModule } from './modules/institutions/institutions.module';
 import { HealthModule } from './modules/health/health.module';
 import { RecordsModule } from './modules/records/records.module';
 
@@ -24,6 +25,7 @@ import { RecordsModule } from './modules/records/records.module';
     TenantModule,
     PolicyModule,
     AuthModule,
+    InstitutionsModule,
     HealthModule,
     RecordsModule,
   ],

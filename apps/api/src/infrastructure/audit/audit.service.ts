@@ -21,10 +21,15 @@ export type AuditAction =
   | 'auth.password.reset_completed'
   | 'auth.mfa.enrolled'
   | 'auth.mfa.verified'
+  | 'auth.mfa.recovered'
   | 'auth.mfa.failure'
   | 'auth.step_up.granted'
   | 'auth.step_up.failure'
   | 'auth.step_up.consumed'
+  | 'institution.created'
+  | 'institution.updated'
+  | 'institution.status_changed'
+  | 'membership.created'
   | 'policy.denied';
 
 export interface AuditInput {

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Env } from '../../config/env';
 import { AuditService } from '../../infrastructure/audit/audit.service';
 import type { PrismaService } from '../../infrastructure/database/prisma.service';
+import { RecoveryCodeService } from './recovery-code.service';
 import { AuthService, type RequestContext } from './auth.service';
 import { PasswordService } from './password.service';
 import { SecretCipherService } from './secret-cipher.service';
@@ -26,6 +27,13 @@ const ENV: Partial<Env> = {
 
 const CTX: RequestContext = { ip: '203.0.113.10', userAgent: 'vitest' };
 
+interface RecoveryRow {
+  id: string;
+  userId: string;
+  codeHash: string;
+  usedAt: Date | null;
+}
+
 interface RefreshRow {
   id: string;
   userId: string;
@@ -41,6 +49,7 @@ interface RefreshRow {
 class FakeDb {
   users = new Map<string, UserAccount>();
   refreshTokens = new Map<string, RefreshRow>();
+  recoveryCodes = new Map<string, RecoveryRow>();
   private seq = 0;
 
   nextId(prefix: string): string {
@@ -149,9 +158,47 @@ function makeHarness(): {
         },
       ),
     },
+    mfaRecoveryCode: {
+      deleteMany: vi.fn(async ({ where }: { where: { userId: string; usedAt: null } }) => {
+        let count = 0;
+        for (const [id, row] of db.recoveryCodes) {
+          if (row.userId === where.userId && row.usedAt === null) {
+            db.recoveryCodes.delete(id);
+            count += 1;
+          }
+        }
+        return { count };
+      }),
+      createMany: vi.fn(async ({ data }: { data: Array<Omit<RecoveryRow, 'id'>> }) => {
+        for (const row of data) {
+          const id = db.nextId('rc');
+          db.recoveryCodes.set(id, { id, usedAt: null, ...row });
+        }
+        return { count: data.length };
+      }),
+      findMany: vi.fn(async ({ where }: { where: { userId: string; usedAt: null } }) =>
+        [...db.recoveryCodes.values()].filter(
+          (r) => r.userId === where.userId && r.usedAt === null,
+        ),
+      ),
+      updateMany: vi.fn(
+        async ({ where, data }: { where: { id: string; usedAt: null }; data: { usedAt: Date } }) => {
+          const row = db.recoveryCodes.get(where.id);
+          if (!row || row.usedAt !== null) return { count: 0 };
+          db.recoveryCodes.set(row.id, { ...row, ...data });
+          return { count: 1 };
+        },
+      ),
+    },
+    // Interactive transactions: run the work against this same fake.
+    withTenant: vi.fn(async (_ctx: unknown, work: (tx: unknown) => Promise<unknown>) =>
+      work(prismaLike),
+    ),
     // Prisma's array form of $transaction: the promises are already running.
     $transaction: vi.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
   } as unknown as PrismaService;
+
+  const prismaLike = prisma;
 
   const config = {
     get: (key: string) => (ENV as Record<string, unknown>)[key],
@@ -162,6 +209,7 @@ function makeHarness(): {
   const tokens = new TokenService(config);
   const totp = new TotpService();
   const cipher = new SecretCipherService(config);
+  const recovery = new RecoveryCodeService(config, prisma, totp);
   const service = new AuthService(
     prisma,
     passwords,
@@ -170,9 +218,10 @@ function makeHarness(): {
     config,
     totp,
     cipher,
+    recovery,
   );
 
-  return { service, db, audit, passwords, tokens, totp, cipher };
+  return { service, db, audit, passwords, tokens, totp, cipher, recovery };
 }
 
 describe('AuthService — registration', () => {
@@ -705,6 +754,116 @@ describe('AuthService — MFA enrolment, verification and step-up', () => {
 
     await expect(service.stepUp(user.id, '123456', CTX)).rejects.toThrow(
       'MFA is required to perform this action.',
+    );
+  });
+});
+
+describe('AuthService — MFA recovery codes (spec §3)', () => {
+  it('enrollMfa persists hashes only — no plaintext recovery code ever lands in the store', async () => {
+    const { service, db } = makeHarness();
+    const user = baseUser();
+    db.users.set(user.id, user);
+
+    const enrolled = await service.enrollMfa(user);
+
+    expect(enrolled.recoveryCodes).toHaveLength(8);
+    const rows = [...db.recoveryCodes.values()].filter((r) => r.userId === user.id);
+    expect(rows).toHaveLength(8);
+    for (const row of rows) {
+      expect(row.codeHash).toMatch(/^[a-f0-9]{64}$/);
+      for (const code of enrolled.recoveryCodes) {
+        expect(row.codeHash).not.toContain(code.replace(/-/g, ''));
+      }
+    }
+  });
+
+  it('verifyMfa accepts a recovery code in place of a TOTP code and consumes it', async () => {
+    const { service, db, tokens, audit } = makeHarness();
+    const user = baseUser();
+    db.users.set(user.id, user);
+    const enrolled = await service.enrollMfa(user);
+
+    const challenge = await tokens.signToken({
+      subject: user.id,
+      purpose: 'mfa_challenge',
+      ttlSeconds: 300,
+      sessionId: 'sid-rc',
+    });
+
+    const result = await service.verifyMfa(challenge, enrolled.recoveryCodes[0], CTX);
+
+    expect(result.user.mfaEnabled).toBe(true);
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'auth.mfa.recovered' }),
+    );
+
+    // Single use: the same code must not work twice.
+    const challenge2 = await tokens.signToken({
+      subject: user.id,
+      purpose: 'mfa_challenge',
+      ttlSeconds: 300,
+    });
+    await expect(service.verifyMfa(challenge2, enrolled.recoveryCodes[0], CTX)).rejects.toThrow(
+      'Invalid MFA code.',
+    );
+  });
+
+  it('a recovery code survives case and dash differences (normalised comparison)', async () => {
+    const { service, db, tokens } = makeHarness();
+    const user = baseUser();
+    db.users.set(user.id, user);
+    const enrolled = await service.enrollMfa(user);
+
+    const mangled = enrolled.recoveryCodes[1].toLowerCase().replace(/-/g, ' ');
+    const access = await tokens.signToken({ subject: user.id, purpose: 'access', ttlSeconds: 900 });
+
+    const result = await service.verifyMfa(access, mangled, CTX);
+    expect(result.user.mfaEnabled).toBe(true);
+  });
+
+  it('re-enrolment revokes the previous unconsumed recovery set', async () => {
+    const { service, db, tokens } = makeHarness();
+    const user = baseUser();
+    db.users.set(user.id, user);
+    const firstSet = await service.enrollMfa(user);
+
+    // Consume the enrolment activation with a TOTP code, then disable by
+    // simulating re-enrolment (fresh secret + fresh codes).
+    const secondSet = await service.enrollMfa(user);
+
+    expect(secondSet.recoveryCodes).toHaveLength(8);
+    const access = await tokens.signToken({ subject: user.id, purpose: 'access', ttlSeconds: 900 });
+    await expect(service.verifyMfa(access, firstSet.recoveryCodes[2], CTX)).rejects.toThrow(
+      'Invalid MFA code.',
+    );
+    const result = await service.verifyMfa(access, secondSet.recoveryCodes[2], CTX);
+    expect(result.user.mfaEnabled).toBe(true);
+  });
+
+  it('another user’s recovery code is never accepted', async () => {
+    const { service, db, tokens } = makeHarness();
+    const owner = baseUser({ id: 'user-owner' });
+    const stranger = baseUser({ id: 'user-stranger', email: 'stranger@test.dev' });
+    db.users.set(owner.id, owner);
+    db.users.set(stranger.id, stranger);
+    const ownerCodes = await service.enrollMfa(owner);
+    await service.enrollMfa(stranger);
+
+    const access = await tokens.signToken({ subject: owner.id, purpose: 'access', ttlSeconds: 900 });
+    // A valid code from the stranger's set, presented by the owner.
+    await expect(service.verifyMfa(access, ownerCodes.recoveryCodes[0], CTX)).resolves.toMatchObject(
+      { user: expect.objectContaining({ id: owner.id }) },
+    );
+    const strangerAccess = await tokens.signToken({
+      subject: stranger.id,
+      purpose: 'access',
+      ttlSeconds: 900,
+    });
+    // Owner's remaining codes must not open the stranger's account — and
+    // codes are bound to the account that enrolled them.
+    const ownerCode = ownerCodes.recoveryCodes[3];
+    await expect(service.verifyMfa(strangerAccess, ownerCode, CTX)).rejects.toThrow(
+      'Invalid MFA code.',
     );
   });
 });

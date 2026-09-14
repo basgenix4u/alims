@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '../../config/env';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import type { Actor } from './policy';
 
@@ -11,7 +13,20 @@ import type { Actor } from './policy';
  */
 @Injectable()
 export class PolicyService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly platformAdminIds: ReadonlySet<string>;
+
+  constructor(
+    config: ConfigService<Env, true>,
+    private readonly prisma: PrismaService,
+  ) {
+    const raw = (config.get('PLATFORM_ADMIN_USER_IDS') as string) ?? '';
+    this.platformAdminIds = new Set(
+      raw
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    );
+  }
 
   async resolveActor(userId: string): Promise<Actor> {
     const memberships = await this.prisma.membership.findMany({
@@ -26,6 +41,8 @@ export class PolicyService {
         institutionId: membership.institutionId,
         status: 'active' as const,
       })),
+      // Platform authority is configured, never self-claimed (PRD §6.1).
+      platformAdmin: this.platformAdminIds.has(userId) || undefined,
     };
   }
 }

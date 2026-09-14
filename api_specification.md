@@ -153,6 +153,7 @@ Reads `alims_rt` cookie; rotates it. **Reuse of a consumed token revokes the ent
 
 ### `POST /auth/mfa/enroll` → `200 { secret, otpauthUrl, recoveryCodes: string[] }`
 ### `POST /auth/mfa/verify` → `200 { accessToken, expiresIn, user }`
+A recovery code from enrolment may be supplied in place of the TOTP code; it is single-use (consumed on success) and MFA enrolment stays intact. Only a keyed hash of each code is stored.
 ### `POST /auth/step-up` → `200 { stepUpToken, expiresIn: 300 }`
 ```ts
 Request { totpCode: string }

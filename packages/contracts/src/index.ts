@@ -11,3 +11,4 @@ export * from './auth';
 export * from './record';
 export * from './certificate';
 export * from './discovery';
+export * from './institution';
