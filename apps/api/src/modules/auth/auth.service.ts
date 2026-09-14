@@ -7,6 +7,7 @@ import type { Env } from '../../config/env';
 import { AuditService } from '../../infrastructure/audit/audit.service';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { PasswordService } from './password.service';
+import { RecoveryCodeService } from './recovery-code.service';
 import { SecretCipherService } from './secret-cipher.service';
 import { TokenService, type AccessTokenClaims } from './token.service';
 import { TotpService } from './totp.service';
@@ -66,6 +67,7 @@ export class AuthService {
     private readonly config: ConfigService<Env, true>,
     private readonly totp: TotpService,
     private readonly cipher: SecretCipherService,
+    private readonly recovery: RecoveryCodeService,
   ) {}
 
   /**
@@ -378,6 +380,10 @@ export class AuthService {
    * Generates a TOTP secret, encrypts it at rest (AES-256-GCM), and returns
    * the plaintext secret + otpauth URI exactly once. The secret is not active
    * until /auth/mfa/verify confirms possession with a valid code.
+   *
+   * Recovery codes are generated alongside: hashes persisted, plaintexts
+   * returned exactly once. A recovery code may later be supplied in place of
+   * a TOTP code and is consumed on use.
    */
   async enrollMfa(user: UserAccount): Promise<MfaEnrollResult> {
     if (user.mfaEnabled) {
@@ -385,7 +391,7 @@ export class AuthService {
     }
 
     const secret = this.totp.generateSecret();
-    const recoveryCodes = this.totp.generateRecoveryCodes();
+    const recoveryCodes = await this.recovery.generateAndStore(user.id);
 
     await this.prisma.userAccount.update({
       where: { id: user.id },
@@ -424,8 +430,12 @@ export class AuthService {
 
     const secret = user.mfaSecretEncrypted ? this.cipher.tryDecrypt(user.mfaSecretEncrypted) : null;
     if (!secret || !this.totp.verify(secret, totpCode)) {
-      await this.audit.record({
-        action: 'auth.mfa.failure',
+      // A single-use recovery code stands in for the authenticator (spec §3).
+      // Consumed atomically on success; enrolment stays intact.
+      const viaRecovery = secret && (await this.recovery.verifyAndConsume(user.id, totpCode));
+      if (!viaRecovery) {
+        await this.audit.record({
+          action: 'auth.mfa.failure',
         subjectType: 'user_account',
         subjectId: user.id,
         actorUserId: user.id,
@@ -433,7 +443,18 @@ export class AuthService {
         ip: ctx.ip,
         userAgent: ctx.userAgent,
       });
-      throw new UnauthorizedException(GENERIC_MFA_ERROR);
+        throw new UnauthorizedException(GENERIC_MFA_ERROR);
+      }
+
+      await this.audit.record({
+        action: 'auth.mfa.recovered',
+        subjectType: 'user_account',
+        subjectId: user.id,
+        actorUserId: user.id,
+        payload: { via },
+        ip: ctx.ip,
+        userAgent: ctx.userAgent,
+      });
     }
 
     await this.prisma.userAccount.update({ where: { id: user.id }, data: { mfaEnabled: true } });
