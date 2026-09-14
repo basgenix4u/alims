@@ -80,7 +80,10 @@ export class PolicyGuard implements CanActivate {
     // authenticated actions are decided from the principal alone, saving a
     // query per request on the hot path.
     let actor: Actor = { userId: user.userId, memberships: [] };
-    if (requirement?.kind === 'capability') {
+    // Capability checks need memberships; platform-admin checks need the
+    // configured platform authority. Both are resolved fresh from the
+    // database — never trusted from the token.
+    if (requirement?.kind === 'capability' || requirement?.kind === 'platform_admin') {
       actor = await this.policies.resolveActor(user.userId);
     }
 

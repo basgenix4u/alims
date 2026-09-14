@@ -44,6 +44,18 @@ const envSchema = z.object({
   REFRESH_TOKEN_SECRET: secretSchema,
   /** Encrypts TOTP secrets at rest (AES-256-GCM). */
   MFA_ENCRYPTION_KEY: secretSchema,
+  /**
+   * Comma-separated user ids holding platform authority outside the
+   * membership model (api_specification.md §4 institution status changes).
+   * Empty by default — the platform admin path stays closed until
+   * deliberately configured.
+   */
+  PLATFORM_ADMIN_USER_IDS: z
+    .string()
+    .default('')
+    .refine((value) => value === '' || value.split(',').every((id) => /^[0-9a-f-]{36}$/i.test(id.trim())), {
+      message: 'PLATFORM_ADMIN_USER_IDS must be a comma-separated list of user ids',
+    }),
   /** Access token TTL. Contract fixes this at 900s. */
   ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   /** Refresh token TTL — 30 days. */
