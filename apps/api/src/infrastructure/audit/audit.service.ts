@@ -21,6 +21,7 @@ export type AuditAction =
   | 'auth.password.reset_completed'
   | 'auth.mfa.enrolled'
   | 'auth.mfa.verified'
+  | 'auth.mfa.recovered'
   | 'auth.mfa.failure'
   | 'auth.step_up.granted'
   | 'auth.step_up.failure'
