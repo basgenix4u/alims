@@ -10,8 +10,9 @@ import { publicSearchQuerySchema } from './public-query';
  * Unauthenticated public surfaces (api_specification.md §8, §13).
  *
  * These routes opt out of authentication explicitly and their responses are
- * narrow, contract-typed projections (PRD §6.4/§6.10): no grades, identity
- * numbers, reviewer notes, files or contact details are reachable here.
+ * narrow, contract-typed projections (PRD §6.4/§6.10): assessment data,
+ * identity numbers, private review material, files and contact details
+ * are not reachable from this path.
  */
 @ApiTags('public')
 @Public()
