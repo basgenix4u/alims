@@ -42,14 +42,14 @@
   },
   "pnpm": {
     "overrides": {
-      "multer": ">=2.2.0",
+      "multer": ">=2.3.1",
       "glob": ">=10.5.0",
-      "js-yaml": ">=4.3.1",
+      "js-yaml": ">=4.3.2",
       "lodash": ">=4.18.0",
       "picomatch": ">=4.0.4",
       "tmp": ">=0.2.6",
       "postcss": ">=8.5.23",
-      "sharp": ">=0.35.0",
+      "sharp": ">=0.35.4",
       "vite": ">=6.4.3",
       "esbuild": ">=0.25.0",
       "qs": ">=6.15.2",
@@ -57,7 +57,8 @@
       "file-type": ">=21.3.2",
       "webpack": ">=5.104.1",
       "@angular-devkit/core>ajv": ">=8.18.0",
-      "deepmerge-ts": ">=8.0.0"
+      "deepmerge-ts": ">=8.0.0",
+      "fast-uri": ">=3.1.6"
     }
   }
 }
