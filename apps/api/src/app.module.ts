@@ -11,6 +11,7 @@ import { TenantGuard } from './interface/guards/tenant.guard';
 import { TenantModule } from './interface/middleware/tenant.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { InstitutionsModule } from './modules/institutions/institutions.module';
+import { PublicSurfacesModule } from './modules/public/public.module';
 import { HealthModule } from './modules/health/health.module';
 import { RecordsModule } from './modules/records/records.module';
 
@@ -26,6 +27,7 @@ import { RecordsModule } from './modules/records/records.module';
     PolicyModule,
     AuthModule,
     InstitutionsModule,
+    PublicSurfacesModule,
     HealthModule,
     RecordsModule,
   ],
