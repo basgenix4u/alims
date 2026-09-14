@@ -110,6 +110,11 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      # The integration suite imports application source, which resolves
+      # @alims/contracts as a workspace package (its compiled dist).
+      - name: Build shared contracts package
+        run: pnpm --filter @alims/contracts build
+
       - name: Apply migrations
         env:
           DATABASE_URL: postgresql://alims_owner:alims_dev_password@localhost:5432/alims
