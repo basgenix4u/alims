@@ -30,6 +30,13 @@ export type AuditAction =
   | 'institution.updated'
   | 'institution.status_changed'
   | 'membership.created'
+  | 'version.created'
+  | 'upload.initialized'
+  | 'upload.completed'
+  | 'file.provenance_signal'
+  | 'file.download'
+  | 'file.download.denied'
+  | 'file.scan.result'
   | 'policy.denied';
 
 export interface AuditInput {

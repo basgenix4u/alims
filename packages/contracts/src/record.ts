@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import {
   accessLevelSchema, incompleteReasonSchema, outputTypeSchema,
-  recordStatusSchema, verificationLevelSchema,
+  recordStatusSchema, scanStatusSchema, verificationLevelSchema,
+  versionStateSchema,
 } from './enums';
 import { uuidSchema } from './common';
 
@@ -102,3 +103,57 @@ export const depositReceiptSchema = z.object({
   statement: z.literal(DEPOSIT_RECEIPT_STATEMENT),
 });
 export type DepositReceipt = z.infer<typeof depositReceiptSchema>;
+
+/** Version listing/creation — api_specification.md §6. */
+export const recordVersionSchema = z.object({
+  id: uuidSchema,
+  versionNo: z.number().int().positive(),
+  changeSummary: z.string(),
+  state: versionStateSchema,
+  fileName: z.string().nullable(),
+  fileSizeBytes: z.number().int().nullable(),
+  mimeType: z.string().nullable(),
+  sha256: z.string().nullable(),
+  scanStatus: scanStatusSchema,
+  submittedBy: z.object({ id: uuidSchema, displayName: z.string() }).nullable(),
+  submittedAt: z.string().nullable(),
+  isImmutable: z.boolean(),
+  createdAt: z.string(),
+});
+export type RecordVersion = z.infer<typeof recordVersionSchema>;
+
+export const uploadInitSchema = z.object({
+  versionId: uuidSchema,
+  fileName: z.string().min(1).max(300),
+  fileSize: z.number().int().positive(),
+  mimeType: z.string().min(3).max(150),
+  /** Optional pre-computed digest — enables init-time duplicate detection. */
+  sha256: z.string().length(64).optional(),
+  /** Required when re-sending after a DUPLICATE_FILE_CONFIRM_INTENT 409. */
+  intent: z.enum(['new_version', 'replace_draft']).optional(),
+});
+export type UploadInitInput = z.infer<typeof uploadInitSchema>;
+
+export const uploadInitResponseSchema = z.object({
+  uploadId: uuidSchema,
+  parts: z.array(
+    z.object({ partNumber: z.number().int().positive(), url: z.string(), expiresAt: z.string() }),
+  ),
+  partSizeBytes: z.number().int().positive(),
+  maxFileSize: z.number().int().positive(),
+  acceptedMimeTypes: z.array(z.string()),
+});
+export type UploadInitResponse = z.infer<typeof uploadInitResponseSchema>;
+
+export const uploadCompleteSchema = z.object({
+  parts: z.array(z.object({ partNumber: z.number().int().positive(), etag: z.string() })),
+});
+export type UploadCompleteInput = z.infer<typeof uploadCompleteSchema>;
+
+export const uploadStatusSchema = z.object({
+  scanStatus: scanStatusSchema,
+  checksumStatus: z.enum(['unavailable', 'verified', 'mismatch']),
+  progressPercent: z.number().int().min(0).max(100),
+  message: z.string().nullable(),
+});
+export type UploadStatus = z.infer<typeof uploadStatusSchema>;

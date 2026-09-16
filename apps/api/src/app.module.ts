@@ -12,6 +12,7 @@ import { TenantModule } from './interface/middleware/tenant.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { InstitutionsModule } from './modules/institutions/institutions.module';
 import { PublicSurfacesModule } from './modules/public/public.module';
+import { DepositsModule } from './modules/deposits/deposits.module';
 import { HealthModule } from './modules/health/health.module';
 import { RecordsModule } from './modules/records/records.module';
 
@@ -28,6 +29,7 @@ import { RecordsModule } from './modules/records/records.module';
     AuthModule,
     InstitutionsModule,
     PublicSurfacesModule,
+    DepositsModule,
     HealthModule,
     RecordsModule,
   ],

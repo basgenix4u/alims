@@ -13,6 +13,7 @@ const BASE = {
   REFRESH_TOKEN_SECRET: 'b'.repeat(40),
   MFA_ENCRYPTION_KEY: 'c'.repeat(40),
   AUDIT_HASH_SALT: 'd'.repeat(40),
+  UPLOAD_TOKEN_SECRET: 'e'.repeat(40),
 };
 
 const PROD = { ...BASE, NODE_ENV: 'production', CORS_ALLOWED_ORIGINS: 'https://alims.org' };
