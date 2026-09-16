@@ -88,6 +88,25 @@ const envSchema = z.object({
 
   /** Salts IP/user-agent hashes in the audit log so raw PII is never stored. */
   AUDIT_HASH_SALT: secretSchema,
+
+  // ── File deposits (api_specification.md §6) ────────────────
+  /** Object-storage root for the local adapter. Outside the repository. */
+  STORAGE_ROOT: z.string().min(1).default('/var/alims-storage'),
+  /** Hard upload ceiling per file. */
+  UPLOAD_MAX_FILE_MB: z.coerce.number().int().positive().max(2048).default(200),
+  /** Part size for multipart sessions. */
+  UPLOAD_PART_SIZE_MB: z.coerce.number().int().positive().max(64).default(8),
+  /** Comma-separated MIME allowlist. Empty allows nothing — fail closed. */
+  UPLOAD_MIME_ALLOWLIST: z.string().default(
+    'application/pdf,application/zip,text/plain,text/markdown,application/json,' +
+    'application/vnd.oasis.opendocument.text,' +
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ),
+  /** Signs short-lived upload/download tokens (storage access). */
+  UPLOAD_TOKEN_SECRET: secretSchema,
+  /** ClamAV clamd host — when unset, scan results are honestly 'unsupported'. */
+  AV_CLAMD_HOST: z.string().optional(),
+  AV_CLAMD_PORT: z.coerce.number().int().positive().default(3310),
 });
 
 export type Env = z.infer<typeof envSchema>;
