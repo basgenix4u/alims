@@ -1,6 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import {
+  type MemberRole,
+  type OutputType,
   type ReviewTask,
   type ReviewTaskDetail,
   type TaskDecisionInput,
@@ -39,10 +41,10 @@ import { RecordService } from '../../records/application/record.service';
  */
 
 /** Default two-stage review flow when an institution has no template. */
-export const DEFAULT_STAGES = [
+export const DEFAULT_STAGES: ReadonlyArray<{ name: string; roles: MemberRole[] }> = [
   { name: 'supervisor-review', roles: ['supervisor', 'dept_admin'] },
   { name: 'registry-verification', roles: ['registry', 'examiner', 'dept_admin'] },
-] as const;
+];
 
 export function nextStage(stages: readonly string[], current: string): string | null {
   const index = stages.indexOf(current);
@@ -562,7 +564,7 @@ export class WorkflowService {
   private async ensureDefaultTemplate(
     tx: Prisma.TransactionClient,
     institutionId: string,
-    outputType: string,
+    outputType: OutputType,
   ): Promise<{ id: string; stages: unknown }> {
     const existing = await tx.workflowTemplate.findFirst({
       where: { institutionId, outputType, isActive: true },
@@ -585,7 +587,7 @@ export class WorkflowService {
   private async pickAssignee(
     tx: Prisma.TransactionClient,
     institutionId: string,
-    roles: string[],
+    roles: readonly MemberRole[],
   ): Promise<string | null> {
     const membership = await tx.membership.findFirst({
       where: { institutionId, status: 'active', role: { in: roles } },
