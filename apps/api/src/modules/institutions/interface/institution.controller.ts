@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   createInstitutionSchema,
@@ -13,6 +13,7 @@ import { CurrentUser } from '../../../interface/decorators/current-user.decorato
 import { Public } from '../../../interface/decorators/public.decorator';
 import { RequireAction } from '../../../interface/decorators/require-action.decorator';
 import { RequireStepUp } from '../../../interface/decorators/require-step-up.decorator';
+import { StepUpGuard } from '../../../interface/guards/step-up.guard';
 import { TenantContextService } from '../../../interface/middleware/tenant-context.service';
 import { ZodValidationPipe } from '../../../interface/pipes/zod-validation.pipe';
 import { InstitutionService } from '../application/institution.service';
@@ -69,6 +70,7 @@ export class InstitutionController {
   /** Platform-level verify / suspend / archive. Step-up required. */
   @Patch(':institutionId/status')
   @RequireAction('institution:set_status')
+  @UseGuards(StepUpGuard)
   @RequireStepUp('institution.status.change')
   async setStatus(
     @Param('institutionId') id: string,

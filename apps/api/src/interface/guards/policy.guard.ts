@@ -79,15 +79,19 @@ export class PolicyGuard implements CanActivate {
     // Memberships are only needed for role-scoped capabilities. Self and
     // authenticated actions are decided from the principal alone, saving a
     // query per request on the hot path.
-    let actor: Actor = { userId: user.userId, memberships: [] };
+    const resource = this.buildResource(action, metadata, request, user.userId);
+
     // Capability checks need memberships; platform-admin checks need the
     // configured platform authority. Both are resolved fresh from the
-    // database — never trusted from the token.
+    // database — never trusted from the token — inside the resource's
+    // tenant context (membership rows are RLS-scoped per institution).
+    let actor: Actor = { userId: user.userId, memberships: [] };
     if (requirement?.kind === 'capability' || requirement?.kind === 'platform_admin') {
-      actor = await this.policies.resolveActor(user.userId);
+      actor = resource.institutionId
+        ? await this.policies.resolveActorForTenant(user.userId, resource.institutionId)
+        : await this.policies.resolveActor(user.userId);
     }
 
-    const resource = this.buildResource(action, metadata, request, user.userId);
     const decision = this.engine.authorize(actor, action, resource);
 
     if (!decision.allowed) {
