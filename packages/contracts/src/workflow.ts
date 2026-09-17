@@ -1,18 +1,13 @@
 import { z } from 'zod';
 import { paginationQuerySchema, paginatedSchema, uuidSchema } from './common';
+import { reviewDecisionTypeSchema } from './enums';
 
 /** Review workflow — api_specification.md §7. */
+// Note: ReviewDecisionType / reviewDecisionTypeSchema live in ./enums and are
+// re-exported from there; importing here keeps one canonical definition.
 
 export const taskStatusSchema = z.enum(['pending', 'completed', 'reassigned', 'escalated']);
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
-
-export const reviewDecisionTypeSchema = z.enum([
-  'approve',
-  'return_for_revision',
-  'request_contribution_correction',
-  'escalate_integrity',
-]);
-export type ReviewDecisionType = z.infer<typeof reviewDecisionTypeSchema>;
 
 export const reviewTaskSchema = z.object({
   id: uuidSchema,
