@@ -107,7 +107,7 @@ export class WorkflowService {
       }
 
       const template = await this.ensureDefaultTemplate(tx, record.institutionId!, record.outputType);
-      const stages = (template.stages as Array<{ name: string; roles: string[] }>).map(
+      const stages = (template.stages as Array<{ name: string; roles: MemberRole[] }>).map(
         (s) => s.name,
       );
 
@@ -136,7 +136,7 @@ export class WorkflowService {
       const assignee = await this.pickAssignee(
         tx,
         record.institutionId!,
-        (template.stages as Array<{ name: string; roles: string[] }>)[0]!.roles,
+        (template.stages as Array<{ name: string; roles: MemberRole[] }>)[0]!.roles,
       );
       if (!assignee) {
         throw new ConflictException(
@@ -309,7 +309,7 @@ export class WorkflowService {
       const record = task.version.record;
       await this.requireCapability(userId, 'task:decide', record.institutionId, task.id, tx);
 
-      const stages = (task.workflowInstance.template.stages as Array<{ name: string; roles: string[] }>).map(
+      const stages = (task.workflowInstance.template.stages as Array<{ name: string; roles: MemberRole[] }>).map(
         (s) => s.name,
       );
       const following = nextStage(stages, task.stage);
@@ -351,7 +351,7 @@ export class WorkflowService {
             'This stage completes through verification (POST /records/:id/verify), which requires step-up confirmation.',
           );
         }
-        const roles = (task.workflowInstance.template.stages as Array<{ name: string; roles: string[] }>).find(
+        const roles = (task.workflowInstance.template.stages as Array<{ name: string; roles: MemberRole[] }>).find(
           (s) => s.name === following,
         )!.roles;
         const assignee = await this.pickAssignee(tx, record.institutionId!, roles);
@@ -465,7 +465,7 @@ export class WorkflowService {
       if (!instance || instance.isComplete) {
         throw new ConflictException('No active review workflow for this record.');
       }
-      const stages = (instance.template.stages as Array<{ name: string; roles: string[] }>).map(
+      const stages = (instance.template.stages as Array<{ name: string; roles: MemberRole[] }>).map(
         (s) => s.name,
       );
       const finalStage = stages[stages.length - 1]!;
@@ -590,7 +590,7 @@ export class WorkflowService {
     roles: readonly MemberRole[],
   ): Promise<string | null> {
     const membership = await tx.membership.findFirst({
-      where: { institutionId, status: 'active', role: { in: roles } },
+      where: { institutionId, status: 'active', role: { in: [...roles] } },
       orderBy: { createdAt: 'asc' },
       select: { userId: true },
     });
