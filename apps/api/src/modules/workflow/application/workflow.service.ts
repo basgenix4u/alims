@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import {
   type ReviewTask,
   type ReviewTaskDetail,
@@ -559,7 +560,7 @@ export class WorkflowService {
   // ── internals ─────────────────────────────────────────────
 
   private async ensureDefaultTemplate(
-    tx: { workflowTemplate: { findFirst: Function; create: Function } },
+    tx: Prisma.TransactionClient,
     institutionId: string,
     outputType: string,
   ): Promise<{ id: string; stages: unknown }> {
@@ -582,7 +583,7 @@ export class WorkflowService {
 
   /** First active member holding one of the stage roles, oldest membership first. */
   private async pickAssignee(
-    tx: { membership: { findFirst: Function } },
+    tx: Prisma.TransactionClient,
     institutionId: string,
     roles: string[],
   ): Promise<string | null> {
@@ -595,9 +596,7 @@ export class WorkflowService {
   }
 
   /** Sequential per-year NXR id; retried on the (rare) unique collision. */
-  private async mintNxrId(tx: {
-    researchRecord: { count: Function; findUnique: Function };
-  }): Promise<string> {
+  private async mintNxrId(tx: Prisma.TransactionClient): Promise<string> {
     const year = new Date().getUTCFullYear();
     const prefix = `NXR-${year}-`;
     const taken = await tx.researchRecord.count({ where: { nxrId: { startsWith: prefix } } });
