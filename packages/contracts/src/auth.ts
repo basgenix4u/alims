@@ -66,5 +66,6 @@ export const STEP_UP_REQUIRED_ACTIONS = [
   'institution.status.change',
   'member.role.change',
   'restricted.data.export',
+  'record.verify',
 ] as const;
 export type StepUpAction = (typeof STEP_UP_REQUIRED_ACTIONS)[number];

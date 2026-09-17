@@ -48,7 +48,10 @@ function guardFor(
 
   const engine = new PolicyEngine();
   const resolveActor = vi.fn(async (userId: string) => ({ userId, memberships }));
-  const policies = { resolveActor } as unknown as PolicyService;
+  // Tenant-aware resolution returns the same memberships; the guard picks
+  // it whenever the resource carries an institution scope.
+  const resolveActorForTenant = vi.fn(async (userId: string) => ({ userId, memberships }));
+  const policies = { resolveActor, resolveActorForTenant } as unknown as PolicyService;
   const audit = { record: vi.fn(async () => undefined) } as unknown as AuditService;
 
   return { guard: new PolicyGuard(reflector, engine, policies, audit), audit, resolveActor };

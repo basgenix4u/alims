@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { InstitutionsModule } from './modules/institutions/institutions.module';
 import { PublicSurfacesModule } from './modules/public/public.module';
 import { DepositsModule } from './modules/deposits/deposits.module';
+import { WorkflowModule } from './modules/workflow/workflow.module';
 import { HealthModule } from './modules/health/health.module';
 import { RecordsModule } from './modules/records/records.module';
 
@@ -30,6 +31,7 @@ import { RecordsModule } from './modules/records/records.module';
     InstitutionsModule,
     PublicSurfacesModule,
     DepositsModule,
+    WorkflowModule,
     HealthModule,
     RecordsModule,
   ],
