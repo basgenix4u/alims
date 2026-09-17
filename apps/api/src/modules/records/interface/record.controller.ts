@@ -74,15 +74,5 @@ export class RecordController {
     return this.records.updateDraft(id, user.userId, body);
   }
 
-  @Post(':id/submit')
-  @HttpCode(200)
-  async submit(
-    @CurrentUser() user: { userId: string },
-    @Param('id') id: string,
-  ) {
-    const record = await this.records.getById(id, user.userId);
-    this.records.assertReadyForSubmission(record);
-    // Full submit orchestration (workflow instance, version, receipt) lands with the workflow engine.
-    return { record, ready: true };
-  }
 }
+

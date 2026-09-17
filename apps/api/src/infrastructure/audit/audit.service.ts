@@ -37,6 +37,12 @@ export type AuditAction =
   | 'file.download'
   | 'file.download.denied'
   | 'file.scan.result'
+  | 'record.submitted'
+  | 'task.created'
+  | 'task.decided'
+  | 'record.returned'
+  | 'record.verified'
+  | 'integrity.escalated'
   | 'policy.denied';
 
 export interface AuditInput {

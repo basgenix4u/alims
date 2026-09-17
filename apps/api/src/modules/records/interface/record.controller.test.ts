@@ -73,16 +73,6 @@ describe('Records HTTP API (api_specification.md §5)', () => {
     expect(res.body.abstract!.length).toBe(100);
   });
 
-  it('POST /api/v1/records/:id/submit returns 422 when incomplete', async () => {
-    const created = await request(app.getHttpServer()).post('/api/v1/records').send(validBody).expect(201);
-    const res = await request(app.getHttpServer())
-      .post(`/api/v1/records/${created.body.id}/submit`)
-      .expect(422);
-    // RFC 9457: machine code surfaced via `title`; per-field codes in errors[].
-    expect(res.body.title).toBe('SUBMISSION_INCOMPLETE');
-    expect(Array.isArray(res.body.errors)).toBe(true);
-    expect(res.body.errors[0].code).toBe('ABSTRACT_REQUIRED');
-  });
 
   it('returns 404 for an unknown record', async () => {
     await request(app.getHttpServer())
