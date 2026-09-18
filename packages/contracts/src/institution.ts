@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { institutionStatusSchema } from './enums';
-import { paginationQuerySchema, paginatedSchema } from './common';
+import { institutionStatusSchema, memberRoleSchema, membershipStatusSchema } from './enums';
+import { paginationQuerySchema, paginatedSchema, uuidSchema } from './common';
 
 /** Institutions — api_specification.md §4. */
 
@@ -98,3 +98,79 @@ export const institutionListQuerySchema = paginationQuerySchema.extend({
 export type InstitutionListQuery = z.infer<typeof institutionListQuerySchema>;
 
 export const paginatedInstitutionsSchema = paginatedSchema(institutionSummarySchema);
+
+// ── Members (api_specification.md §4 "Members") ───────────────────────────
+
+export const memberSchema = z.object({
+  id: uuidSchema,
+  userId: uuidSchema,
+  email: z.string().email(),
+  displayName: z.string(),
+  role: memberRoleSchema,
+  status: membershipStatusSchema,
+  departmentId: uuidSchema.nullable(),
+  programmeId: uuidSchema.nullable(),
+  createdAt: z.string(),
+});
+export type Member = z.infer<typeof memberSchema>;
+
+export const memberListQuerySchema = paginationQuerySchema.extend({
+  role: memberRoleSchema.optional(),
+  status: membershipStatusSchema.optional(),
+  /** Free-text search over email and display name. */
+  q: z.string().trim().min(1).max(200).optional(),
+});
+export type MemberListQuery = z.infer<typeof memberListQuerySchema>;
+
+export const paginatedMembersSchema = paginatedSchema(memberSchema);
+
+/** Direct add: the person must already have an ALIMS account. */
+export const addMemberSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(320),
+  role: memberRoleSchema,
+  departmentId: uuidSchema.optional(),
+  programmeId: uuidSchema.optional(),
+});
+export type AddMemberInput = z.infer<typeof addMemberSchema>;
+
+/**
+ * Role/status change (step-up required at the route). At least one field.
+ * Status transitions: pending→active, either→revoked; revoked is terminal.
+ */
+export const updateMemberSchema = z
+  .object({
+    role: memberRoleSchema.optional(),
+    status: membershipStatusSchema.optional(),
+    departmentId: uuidSchema.optional(),
+    programmeId: uuidSchema.optional(),
+  })
+  .refine((input) => Object.values(input).some((v) => v !== undefined), {
+    message: 'Provide at least one change (role, status, departmentId, programmeId).',
+    path: [],
+  });
+export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
+
+/** Bulk invite — up to 500 emails, processed per-item, never all-or-nothing. */
+export const bulkInviteItemSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(320),
+  role: memberRoleSchema.default('student'),
+  departmentId: uuidSchema.optional(),
+  programmeId: uuidSchema.optional(),
+});
+export const bulkInviteSchema = z.object({
+  invitations: z.array(bulkInviteItemSchema).min(1).max(500),
+});
+export type BulkInviteInput = z.infer<typeof bulkInviteSchema>;
+
+export const bulkInviteOutcomeSchema = z.enum(['invited', 'already_member', 'no_account']);
+export const bulkInvitationResultSchema = z.object({
+  email: z.string().email(),
+  outcome: bulkInviteOutcomeSchema,
+  member: memberSchema.nullable(),
+});
+export type BulkInvitationResult = z.infer<typeof bulkInvitationResultSchema>;
+
+export const bulkInviteResponseSchema = z.object({
+  invitations: z.array(bulkInvitationResultSchema),
+});
+export type BulkInviteResponse = z.infer<typeof bulkInviteResponseSchema>;
