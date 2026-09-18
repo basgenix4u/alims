@@ -12,6 +12,121 @@ import { api, type CertificateView } from '@/lib/api-client';
 
 type Decision = 'approve' | 'return_for_revision' | 'request_contribution_correction' | 'escalate_integrity';
 
+/**
+ * Similarity panel (spec §7, PRD §6.5): the advisory assessment plus the
+ * human integrity-review form. The advisory sentence is always shown —
+ * a high score must never read as an accusation — and recording an
+ * outcome never changes the record status.
+ */
+function SimilarityPanel({ recordId, versionId }: { recordId: string; versionId: string }) {
+  const { t } = useI18n();
+  const query = useQuery({
+    queryKey: ['similarity', versionId],
+    queryFn: () => api.similarity.get(recordId, versionId),
+  });
+  const assessment = query.data;
+
+  type IntegrityOutcomeChoice =
+    | 'no_issue'
+    | 'citation_correction_required'
+    | 'attribution_correction_required'
+    | 'escalated'
+    | 'inconclusive';
+  const [outcome, setOutcome] = useState<IntegrityOutcomeChoice>('no_issue');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reviewed, setReviewed] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.similarity.review(recordId, versionId, { outcome, reason });
+      setReviewed(true);
+      await query.refetch();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (query.isLoading) return <p role="status">{t('common.loading')}</p>;
+  // Authorised reviewers always see the assessment; anything else is a
+  // muted no-op so the panel never blocks the decision bench.
+  if (query.isError || !assessment) {
+    return <p className="text-sm text-ink-muted">{t('review.similarityUnavailable')}</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      <dl className="grid gap-2 text-sm sm:grid-cols-[auto_1fr]">
+        <dt className="text-ink-muted">{t('review.similarityStatus')}</dt>
+        <dd>{assessment.status}</dd>
+        <dt className="text-ink-muted">{t('review.similarityScore')}</dt>
+        <dd>{assessment.score === null ? '—' : `${assessment.score}%`}</dd>
+        <dt className="text-ink-muted">{t('review.similarityProvider')}</dt>
+        <dd>{assessment.provider}</dd>
+      </dl>
+      <p className="tone-warning rounded-md border-2 px-4 py-3 text-sm" role="note">
+        {assessment.advisoryNotice}
+      </p>
+
+      {reviewed ? (
+        <p role="status">{t('review.similaritySubmitted')}</p>
+      ) : (
+        <div className="space-y-2">
+          <div>
+            <label htmlFor="similarity-outcome" className="block text-sm font-semibold text-ink">
+              {t('review.similarityOutcome')}
+            </label>
+            <select
+              id="similarity-outcome"
+              className="input mt-1"
+              value={outcome}
+              onChange={(e) => setOutcome(e.target.value as IntegrityOutcomeChoice)}
+            >
+              <option value="no_issue">No issue</option>
+              <option value="citation_correction_required">Citation correction required</option>
+              <option value="attribution_correction_required">Attribution correction required</option>
+              <option value="escalated">Escalation to formal institutional process</option>
+              <option value="inconclusive">Inconclusive</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="similarity-reason" className="block text-sm font-semibold text-ink">
+              {t('review.similarityReason')}
+            </label>
+            <p className="text-sm text-ink-muted">{t('review.similarityReasonHelp')}</p>
+            <textarea
+              id="similarity-reason"
+              className="input mt-1"
+              rows={3}
+              minLength={10}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </div>
+          {error ? (
+            <p role="alert" className="tone-danger text-sm">
+              {error}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={busy || reason.trim().length < 10}
+            onClick={() => void submit()}
+          >
+            {t('review.similaritySubmit')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Review task detail: the decision bench, verification, and certificates (spec §7–§8). */
 export default function ReviewTaskPage() {
   const { t } = useI18n();
@@ -176,6 +291,13 @@ export default function ReviewTaskPage() {
             ) : (
               <p className="text-sm text-ink-muted">{t('review.noPriorDecisions')}</p>
             )}
+          </section>
+
+          <section className="rounded-lg border border-surface-border bg-surface p-5 space-y-3" aria-labelledby="similarity-title">
+            <h2 id="similarity-title" className="text-lg font-bold text-ink">
+              {t('review.similarityTitle')}
+            </h2>
+            <SimilarityPanel recordId={task.recordId} versionId={task.versionId} />
           </section>
 
           {task.status === 'pending' ? (
