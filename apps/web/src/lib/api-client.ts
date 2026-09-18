@@ -7,8 +7,10 @@ import {
   publicVerificationSchema,
   readinessResponseSchema,
   registerSchema,
+  similarityAssessmentSchema,
   userSummarySchema,
   type CreateRecordInput,
+  type SimilarityReviewInput,
   type DepositReceipt,
   type LoginInput,
   type LoginResponse,
@@ -438,6 +440,21 @@ export const api = {
         `/records/${id}/versions`,
         { method: 'POST', body: JSON.stringify({ changeSummary }) },
         (d) => versionSchema.parse(d),
+      ),
+  },
+
+  similarity: {
+    get: (recordId: string, versionId: string) =>
+      request(
+        `/records/${recordId}/versions/${versionId}/similarity`,
+        { method: 'GET' },
+        (d) => similarityAssessmentSchema.parse(d),
+      ),
+    review: (recordId: string, versionId: string, input: SimilarityReviewInput) =>
+      request(
+        `/records/${recordId}/versions/${versionId}/similarity/review`,
+        { method: 'POST', body: JSON.stringify(input) },
+        (d) => similarityAssessmentSchema.parse(d),
       ),
   },
 

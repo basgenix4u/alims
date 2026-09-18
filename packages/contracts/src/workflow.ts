@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { paginationQuerySchema, paginatedSchema, uuidSchema } from './common';
-import { reviewDecisionTypeSchema } from './enums';
+import { integrityOutcomeSchema, reviewDecisionTypeSchema, similarityStatusSchema } from './enums';
 
 /** Review workflow — api_specification.md §7. */
 // Note: ReviewDecisionType / reviewDecisionTypeSchema live in ./enums and are
@@ -77,3 +77,32 @@ export const verifyRecordSchema = z.object({
   versionId: uuidSchema,
 });
 export type VerifyRecordInput = z.infer<typeof verifyRecordSchema>;
+
+// ── Similarity assessment (PRD §6.5, ADR-004) ────────────────────────────
+// The similarity subsystem has NO write path to record status. A high score
+// changes nothing on its own; every consequence carries a human decision.
+
+/** The exact advisory sentence every assessment response must carry. */
+export const SIMILARITY_ADVISORY_NOTICE = 'Review signal only. Not a finding of misconduct.';
+
+export const similarityAssessmentSchema = z.object({
+  id: uuidSchema,
+  versionId: uuidSchema,
+  status: similarityStatusSchema,
+  /** Overall overlap percentage from the provider, when a scan completed. */
+  score: z.number().min(0).max(100).nullable(),
+  /** Provider report location; null until a report exists. */
+  reportUrl: z.string().nullable(),
+  provider: z.string(),
+  advisoryNotice: z.literal(SIMILARITY_ADVISORY_NOTICE),
+  requestedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+});
+export type SimilarityAssessment = z.infer<typeof similarityAssessmentSchema>;
+
+/** A human must choose an outcome and give a reason (PRD §6.5). */
+export const similarityReviewSchema = z.object({
+  outcome: integrityOutcomeSchema,
+  reason: z.string().trim().min(10).max(4000),
+});
+export type SimilarityReviewInput = z.infer<typeof similarityReviewSchema>;
