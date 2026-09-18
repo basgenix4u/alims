@@ -131,7 +131,7 @@ export class PublicService {
    * Unknown tokens return `not_found`; existence is never disclosed.
    */
   async verify(qrToken: string): Promise<PublicVerification> {
-    const rows = await this.prisma.$queryRaw<Array<PublicVerification | null>>`
+    const rows = await this.prisma.$queryRaw<Array<{ value: PublicVerification | null }>>`
       SELECT public_verification_by_qr(${qrToken}::text) AS value
     `;
     const result = rows[0]?.value ?? null;
