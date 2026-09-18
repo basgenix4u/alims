@@ -42,6 +42,9 @@ export type AuditAction =
   | 'task.decided'
   | 'record.returned'
   | 'record.verified'
+  | 'certificate.issued'
+  | 'certificate.revoked'
+  | 'certificate.superseded'
   | 'integrity.escalated'
   | 'policy.denied';
 

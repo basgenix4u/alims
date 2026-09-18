@@ -499,6 +499,7 @@ model UserAccount {
   accessRequests    AccessRequest[]
   uploadCreations   FileUpload[]      @relation("UploadCreator")
   receiptDeposits   DepositReceipt[]  @relation("ReceiptDepositor")
+  issuedCertificates Certificate[]   @relation("CertificateIssuer")
   disputes          Dispute[]
 
   @@index([email])
@@ -840,6 +841,7 @@ model Certificate {
 
   record       ResearchRecord @relation(fields: [recordId], references: [id])
   version      RecordVersion  @relation(fields: [versionId], references: [id])
+  issuedBy     UserAccount    @relation("CertificateIssuer", fields: [issuedById], references: [id])
   supersededBy Certificate?   @relation("CertSupersede", fields: [supersededById], references: [id])
   supersedes   Certificate[]  @relation("CertSupersede")
 
