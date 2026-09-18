@@ -1,14 +1,19 @@
 import {
+  addMemberSchema,
   createRecordSchema,
   depositReceiptSchema,
   healthResponseSchema,
   loginResponseSchema,
+  memberSchema,
   problemDetailsSchema,
   publicVerificationSchema,
   readinessResponseSchema,
   registerSchema,
   similarityAssessmentSchema,
+  updateMemberSchema,
   userSummarySchema,
+  type AddMemberInput,
+  type BulkInvitationResult,
   type CreateRecordInput,
   type SimilarityReviewInput,
   type DepositReceipt,
@@ -208,6 +213,22 @@ const certificateSchema = z.object({
   revokedAt: z.string().nullable(),
 });
 export type CertificateView = z.infer<typeof certificateSchema>;
+
+const memberListSchema = z.object({
+  items: z.array(memberSchema),
+  nextCursor: z.string().nullable(),
+  hasMore: z.boolean(),
+});
+
+const bulkInviteResponseSchema = z.object({
+  invitations: z.array(
+    z.object({
+      email: z.string(),
+      outcome: z.enum(['invited', 'already_member', 'no_account']),
+      member: memberSchema.nullable(),
+    }),
+  ),
+});
 
 const mfaEnrollResponseSchema = z.object({
   secret: z.string(),
@@ -441,6 +462,45 @@ export const api = {
         { method: 'POST', body: JSON.stringify({ changeSummary }) },
         (d) => versionSchema.parse(d),
       ),
+  },
+
+  members: {
+    list: (institutionId: string, query?: { role?: string; status?: string; q?: string }) => {
+      const params = new URLSearchParams();
+      if (query?.role) params.set('role', query.role);
+      if (query?.status) params.set('status', query.status);
+      if (query?.q) params.set('q', query.q);
+      const suffix = params.toString() ? `?${params.toString()}` : '';
+      return request(
+        `/institutions/${institutionId}/members${suffix}`,
+        { method: 'GET' },
+        (d) => memberListSchema.parse(d),
+      );
+    },
+    add: (institutionId: string, input: AddMemberInput) =>
+      request(
+        `/institutions/${institutionId}/members`,
+        { method: 'POST', body: JSON.stringify(addMemberSchema.parse(input)) },
+        (d) => memberSchema.parse(d),
+      ),
+    bulkInvite: (institutionId: string, invitations: AddMemberInput[]) =>
+      request(
+        `/institutions/${institutionId}/members/bulk-invite`,
+        { method: 'POST', body: JSON.stringify({ invitations }) },
+        (d) => bulkInviteResponseSchema.parse(d) as { invitations: BulkInvitationResult[] },
+      ),
+    update: (memberId: string, input: { role?: string; status?: string }, stepUpToken: string) =>
+      request(
+        `/members/${memberId}`,
+        {
+          method: 'PATCH',
+          headers: { 'x-step-up-token': stepUpToken },
+          body: JSON.stringify(updateMemberSchema.parse(input)),
+        },
+        (d) => memberSchema.parse(d),
+      ),
+    revoke: (memberId: string) =>
+      request(`/members/${memberId}`, { method: 'DELETE' }, () => null),
   },
 
   similarity: {

@@ -40,6 +40,9 @@ export const memberRoleSchema = z.enum([
 ]);
 export type MemberRole = z.infer<typeof memberRoleSchema>;
 
+export const membershipStatusSchema = z.enum(['active', 'pending', 'revoked']);
+export type MembershipStatus = z.infer<typeof membershipStatusSchema>;
+
 export const institutionStatusSchema = z.enum([
   'pending_verification', 'verified', 'suspended', 'archived',
 ]);
