@@ -113,7 +113,7 @@ export class PublicService {
       keywords: row.keywords,
       discipline: null,
       contributors,
-      relationships: relationships.map((r) => ({
+      relationships: relationships.map((r: { relType: string; toId: string }) => ({
         relType: r.relType,
         targetNxrId: r.toId,
         targetTitle: '',
@@ -123,35 +123,19 @@ export class PublicService {
 
   /**
    * Public QR verification (spec §8): exactly the ten PRD §6.4 fields.
-   * Unknown or malformed tokens return `not_found` — existence is never
-   * disclosed, and the QR token carries no embedded data (PRD §8).
+   *
+   * The read goes through a SECURITY DEFINER function whose SELECT list IS
+   * the projection — row-level security keeps non-public records invisible
+   * to the anonymous context, while a holder of the opaque QR token still
+   * receives the verification facts (PRD §8: the token is the capability).
+   * Unknown tokens return `not_found`; existence is never disclosed.
    */
   async verify(qrToken: string): Promise<PublicVerification> {
-    const cert = await this.prisma.certificate.findUnique({
-      where: { qrToken },
-      select: {
-        status: true,
-        certificateNo: true,
-        nxrId: true,
-        issuedAt: true,
-        supersededById: true,
-        record: {
-          select: {
-            title: true,
-            outputType: true,
-            verificationLevel: true,
-            owner: { select: { displayName: true } },
-            institution: { select: { displayName: true } },
-            contributors: {
-              where: { ackStatus: 'acknowledged' },
-              select: { externalName: true, user: { select: { displayName: true } } },
-            },
-          },
-        },
-      },
-    });
-
-    if (!cert) {
+    const rows = await this.prisma.$queryRaw<Array<{ value: PublicVerification | null }>>`
+      SELECT public_verification_by_qr(${qrToken}::text) AS value
+    `;
+    const result = rows[0]?.value ?? null;
+    if (!result) {
       return {
         status: 'not_found',
         certificateNo: '',
@@ -166,25 +150,7 @@ export class PublicService {
         disclaimer: CERTIFICATE_DISCLAIMER,
       };
     }
-
-    const names = cert.record.contributors.map(
-      (c) => c.user?.displayName ?? c.externalName ?? '',
-    );
-    const researchers = names.length > 0 ? names : [cert.record.owner.displayName];
-
-    return {
-      status: cert.status,
-      certificateNo: cert.certificateNo,
-      nxrId: cert.nxrId,
-      title: cert.record.title,
-      researcherNames: researchers,
-      institutionName: cert.record.institution?.displayName ?? '',
-      outputType: cert.record.outputType,
-      issueDate: cert.issuedAt.toISOString(),
-      verificationLevel: cert.record.verificationLevel,
-      supersededBy: cert.supersededById,
-      disclaimer: CERTIFICATE_DISCLAIMER,
-    };
+    return result;
   }
 
   /** Summary projection with embargo-aware excerpt handling (spec §13). */

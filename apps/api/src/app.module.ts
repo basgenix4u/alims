@@ -14,6 +14,7 @@ import { InstitutionsModule } from './modules/institutions/institutions.module';
 import { PublicSurfacesModule } from './modules/public/public.module';
 import { DepositsModule } from './modules/deposits/deposits.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
+import { CertificatesModule } from './modules/certificates/certificates.module';
 import { HealthModule } from './modules/health/health.module';
 import { RecordsModule } from './modules/records/records.module';
 
@@ -32,6 +33,7 @@ import { RecordsModule } from './modules/records/records.module';
     PublicSurfacesModule,
     DepositsModule,
     WorkflowModule,
+    CertificatesModule,
     HealthModule,
     RecordsModule,
   ],
