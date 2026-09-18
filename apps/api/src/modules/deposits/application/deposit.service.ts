@@ -232,18 +232,20 @@ export class DepositService {
     }
     const etag = await this.localStorage.writePart(uploadId, partNumber, body as never);
 
-    const ctx = this.tenants.current();
-    await this.prisma.withTenant(ctx, async (tx) => {
-      const upload = await tx.fileUpload.findUnique({ where: { id: uploadId } });
-      if (!upload || upload.status !== 'in_progress') {
-        throw new NotFoundException('Upload session not found.');
-      }
-      const parts = (upload.parts as Array<{ partNumber: number; etag: string }>) ?? [];
-      const next = parts.filter((p) => p.partNumber !== partNumber);
-      next.push({ partNumber, etag });
-      next.sort((a, b) => a.partNumber - b.partNumber);
-      await tx.fileUpload.update({ where: { id: uploadId }, data: { parts: next } });
-    });
+    // Bookkeeping runs through a SECURITY DEFINER function: part PUTs are
+    // authorised by the signed URL (no user session), so the system context
+    // applies and row-level security would hide the row. The token was
+    // verified above; this only records the etag and refuses dead sessions.
+    const recorded = await this.prisma.withTenant(
+      { institutionId: null, userId: null },
+      (tx) =>
+        tx.$queryRaw<Array<{ ok: boolean }>>`
+          SELECT upload_record_part(${uploadId}::uuid, ${partNumber}::int, ${etag}::text) AS ok
+        `,
+    );
+    if (recorded[0]?.ok !== true) {
+      throw new NotFoundException('Upload session not found.');
+    }
 
     return { etag };
   }

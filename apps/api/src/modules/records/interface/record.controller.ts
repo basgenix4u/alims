@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../../interface/decorators/current-user.decorator';
+import { TenantContextService } from '../../../interface/middleware/tenant-context.service';
 import { RecordService } from '../application/record.service';
 import { RecordDraftInput, ResearchRecord } from '../domain/record.entity';
 import { RecordsErrorFilter } from './records-error.filter';
@@ -28,7 +29,10 @@ import { RecordsErrorFilter } from './records-error.filter';
 @Controller('records')
 @UseFilters(RecordsErrorFilter)
 export class RecordController {
-  constructor(@Inject(RecordService) private readonly records: RecordService) {}
+  constructor(
+    @Inject(RecordService) private readonly records: RecordService,
+    private readonly tenants: TenantContextService,
+  ) {}
 
   @Post()
   @HttpCode(201)
@@ -36,7 +40,10 @@ export class RecordController {
     @CurrentUser() user: { userId: string },
     @Body() body: RecordDraftInput,
   ): Promise<ResearchRecord> {
-    return this.records.createDraft(user.userId, body);
+    // Institution affiliation: explicit body value, else the proven
+    // X-Institution-Id claim (the browser client always uses the claim).
+    const institutionId = body.institutionId ?? this.tenants.current().institutionId ?? undefined;
+    return this.records.createDraft(user.userId, { ...body, institutionId });
   }
 
   @Get()

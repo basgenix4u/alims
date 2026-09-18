@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/i18n/provider';
 import { useRouteFocus } from '@/hooks/use-route-focus';
+import { useSession } from '@/features/session/session-provider';
 
 const LINKS = [
   { href: '/', key: 'nav.home' as const },
@@ -17,7 +18,11 @@ const LINKS = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const pathname = usePathname();
+  const { state, logout } = useSession();
   useRouteFocus();
+
+  const isReviewer =
+    state.status === 'authenticated' || state.status === 'mfa-challenge';
 
   return (
     <div className="min-h-screen">
@@ -31,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="ms-2 text-sm font-medium text-brand">{t('brand.motto')}</span>
           </Link>
           <nav aria-label={t('nav.primary')}>
-            <ul className="flex flex-wrap gap-3 text-sm">
+            <ul className="flex flex-wrap items-center gap-3 text-sm">
               {LINKS.map((link) => {
                 const active = pathname === link.href;
                 return (
@@ -46,6 +51,51 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </li>
                 );
               })}
+              {isReviewer ? (
+                <li>
+                  <Link
+                    href="/review"
+                    aria-current={pathname?.startsWith('/review') ? 'page' : undefined}
+                    className={`rounded px-2 py-1 ${pathname?.startsWith('/review') ? 'bg-brand text-white' : 'text-ink hover:bg-surface-subtle'}`}
+                  >
+                    {t('nav.review')}
+                  </Link>
+                </li>
+              ) : null}
+              <li aria-hidden="true" className="hidden text-surface-border sm:inline">
+                |
+              </li>
+              {state.status === 'authenticated' ? (
+                <>
+                  <li>
+                    <Link href="/account/mfa" className="rounded px-2 py-1 text-ink hover:bg-surface-subtle">
+                      {state.user.displayName}
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      className="btn-secondary px-2 py-1 text-sm"
+                      onClick={() => void logout()}
+                    >
+                      {t('nav.signOut')}
+                    </button>
+                  </li>
+                </>
+              ) : state.status === 'anonymous' ? (
+                <>
+                  <li>
+                    <Link href="/login" className="rounded px-2 py-1 text-ink hover:bg-surface-subtle">
+                      {t('nav.login')}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/register" className="rounded px-2 py-1 text-brand hover:underline">
+                      {t('nav.register')}
+                    </Link>
+                  </li>
+                </>
+              ) : null}
             </ul>
           </nav>
         </div>

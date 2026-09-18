@@ -14,6 +14,7 @@ import {
 } from '@alims/contracts';
 import { useMemo, useState } from 'react';
 import { ApiError, api } from '@/lib/api-client';
+import { DepositStep } from './deposit-step';
 import { useI18n } from '@/i18n/provider';
 
 const STEPS = ['identity', 'access', 'context'] as const;
@@ -62,6 +63,7 @@ export function RecordWizard() {
   const [dirty, setDirty] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
   const [statusDetail, setStatusDetail] = useState<string | null>(null);
 
   const step = STEPS[stepIndex] ?? 'identity';
@@ -119,7 +121,8 @@ export function RecordWizard() {
     setStatus('saving');
     setStatusDetail(null);
     try {
-      await api.records.create(payload);
+      const created = await api.records.create(payload);
+      setSavedRecordId(created.id);
       setStatus('saved');
       setDirty(false);
     } catch (err) {
@@ -400,12 +403,17 @@ export function RecordWizard() {
       </div>
 
       {status === 'saved' ? (
-        <p
-          role="status"
-          className="tone-verified rounded-md border-2 px-3 py-2 text-sm"
-        >
-          ✓ {t('wizard.saved')}
-        </p>
+        <>
+          <p
+            role="status"
+            className="tone-verified rounded-md border-2 px-3 py-2 text-sm"
+          >
+            ✓ {t('wizard.saved')}
+          </p>
+          {savedRecordId ? (
+            <DepositStep recordId={savedRecordId} />
+          ) : null}
+        </>
       ) : null}
       {status === 'error' ? (
         <p

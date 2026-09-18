@@ -2,7 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { UserAccount } from '@prisma/client';
-import type { LoginInput, RegisterInput, UserSummary } from '@alims/contracts';
+import {
+  LoginInput,
+  MembershipSummary,
+  RegisterInput,
+  UserSummary,
+} from '@alims/contracts';
 import type { Env } from '../../config/env';
 import { AuditService } from '../../infrastructure/audit/audit.service';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
@@ -94,7 +99,7 @@ export class AuthService {
         userAgent: ctx.userAgent,
       });
       // Identical response shape — no 409 leak.
-      return { user: this.toSummary(existing), verificationEmailSent: true };
+      return { user: await this.summarize(existing), verificationEmailSent: true };
     }
 
     const passwordHash = await this.passwords.hash(input.password);
@@ -117,7 +122,7 @@ export class AuthService {
       userAgent: ctx.userAgent,
     });
 
-    return { user: this.toSummary(user), verificationEmailSent: true };
+    return { user: await this.summarize(user), verificationEmailSent: true };
   }
 
   /**
@@ -234,7 +239,7 @@ export class AuthService {
     return {
       accessToken,
       expiresIn: ttl,
-      user: this.toSummary(user),
+      user: await this.summarize(user),
       mfaRequired,
       refreshToken: refresh.token,
       refreshExpiresAt: refresh.expiresAt,
@@ -324,7 +329,7 @@ export class AuthService {
     return {
       accessToken,
       expiresIn: this.tokens.accessTokenTtlSeconds,
-      user: this.toSummary(stored.user),
+      user: { ...this.toSummary(stored.user), memberships: await this.membershipsOf(stored.userId) },
       mfaRequired,
       refreshToken: next.token,
       refreshExpiresAt: next.expiresAt,
@@ -478,7 +483,7 @@ export class AuthService {
     return {
       accessToken,
       expiresIn: this.tokens.accessTokenTtlSeconds,
-      user: this.toSummary({ ...user, mfaEnabled: true }),
+      user: await this.summarize({ ...user, mfaEnabled: true }),
     };
   }
 
@@ -597,7 +602,44 @@ export class AuthService {
    * Never return the entity: passwordHash, mfaSecretEncrypted and
    * legalNameEncrypted must never reach a response body (PRD §9.1).
    */
-  toSummary(user: UserAccount): UserSummary {
+  /**
+   * Active memberships of `userId` in verified institutions.
+   *
+   * Reads through the `my_memberships` SECURITY DEFINER function: the
+   * membership table is RLS-scoped to the claimed tenant, so without this
+   * a user could never discover which tenant to claim (chicken-and-egg).
+   * The function only ever returns the caller's own rows.
+   */
+  async membershipsOf(userId: string): Promise<MembershipSummary[]> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        institution_id: string;
+        institution_name: string;
+        institution_slug: string;
+        department_id: string | null;
+        programme_id: string | null;
+        role: string;
+        status: string;
+      }>
+    >`SELECT institution_id, institution_name, institution_slug, department_id, programme_id, role, status
+       FROM my_memberships(${userId}::uuid)`;
+    return rows.map((r) => ({
+      institutionId: r.institution_id,
+      institutionName: r.institution_name,
+      institutionSlug: r.institution_slug,
+      departmentId: r.department_id,
+      programmeId: r.programme_id,
+      role: r.role as MembershipSummary['role'],
+      status: r.status as MembershipSummary['status'],
+    }));
+  }
+
+  /** `toSummary` + live memberships — what every session-producing path returns. */
+  async summarize(user: UserAccount): Promise<UserSummary> {
+    return { ...this.toSummary(user), memberships: await this.membershipsOf(user.id) };
+  }
+
+  toSummary(user: UserAccount): Omit<UserSummary, 'memberships'> {
     return {
       id: user.id,
       email: user.email,
