@@ -85,7 +85,14 @@ export class WorkflowService {
     }
     this.records.assertReadyForSubmission(entity);
 
-    return this.prisma.withTenant(ctx, async (tx) => {
+    // Effective tenant for the mutation: the client's proven claim when
+    // present, else the record's own institution. The lazy default
+    // workflow-template insert is institution-scoped under RLS, and a
+    // claim-less submit (a plain `POST /records/:id/submit`) is a legal
+    // call — the record's affiliation was proven when it was created.
+    const institutionId = ctx.institutionId ?? entity.institutionId ?? null;
+
+    return this.prisma.withTenant({ userId, institutionId }, async (tx) => {
       const record = await tx.researchRecord.findUnique({ where: { id: recordId } });
       if (!record || record.ownerUserId !== userId) {
         throw new NotFoundException('Record not found.');

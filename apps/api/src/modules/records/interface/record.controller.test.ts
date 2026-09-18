@@ -1,4 +1,7 @@
 import { Test } from '@nestjs/testing';
+import { TenantModule } from '../../../interface/middleware/tenant.module';
+import { PrismaModule } from '../../../infrastructure/database/prisma.module';
+import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -20,10 +23,14 @@ describe('Records HTTP API (api_specification.md §5)', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [RecordsModule],
-    })
-      // HTTP behaviour only — persistence is covered by the integration
+      // TenantModule/PrismaModule back the claim fallback in the create
+      // path; there is no ALS store here, so requests act personally
+      // (no institution claim). Persistence is covered by the integration
       // suite against a real PostgreSQL.
+      imports: [RecordsModule, TenantModule, PrismaModule],
+    })
+      .overrideProvider(PrismaService)
+      .useValue({})
       .overrideProvider(RECORD_REPOSITORY)
       .useClass(InMemoryRecordRepository)
       .compile();

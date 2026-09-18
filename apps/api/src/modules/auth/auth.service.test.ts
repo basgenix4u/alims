@@ -194,6 +194,9 @@ function makeHarness(): {
     withTenant: vi.fn(async (_ctx: unknown, work: (tx: unknown) => Promise<unknown>) =>
       work(prismaLike),
     ),
+    // my_memberships(): the unit fake has no memberships (SECURITY DEFINER
+    // path is covered by the integration suite against real PostgreSQL).
+    $queryRaw: vi.fn(async () => []),
     // Prisma's array form of $transaction: the promises are already running.
     $transaction: vi.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
   } as unknown as PrismaService;
@@ -289,7 +292,7 @@ describe('AuthService — registration', () => {
     expect(JSON.stringify(result)).not.toContain('argon2');
     expect(result.user).not.toHaveProperty('passwordHash');
     expect(Object.keys(result.user).sort()).toEqual(
-      ['displayName', 'email', 'id', 'identityLevel', 'mfaEnabled'].sort(),
+      ['displayName', 'email', 'id', 'identityLevel', 'mfaEnabled', 'memberships'].sort(),
     );
   });
 });

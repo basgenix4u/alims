@@ -30,23 +30,31 @@ export const totpCodeSchema = z.string().regex(/^\d{6}$/, 'Enter the 6-digit cod
 export const stepUpSchema = z.object({ totpCode: totpCodeSchema });
 export type StepUpInput = z.infer<typeof stepUpSchema>;
 
+export const membershipSummarySchema = z.object({
+  institutionId: uuidSchema,
+  institutionName: z.string(),
+  institutionSlug: z.string(),
+  departmentId: uuidSchema.nullable(),
+  programmeId: uuidSchema.nullable(),
+  role: memberRoleSchema,
+  status: z.enum(['active', 'pending', 'revoked']),
+});
+export type MembershipSummary = z.infer<typeof membershipSummarySchema>;
+
 export const userSummarySchema = z.object({
   id: uuidSchema,
   email: z.string().email(),
   displayName: z.string(),
   identityLevel: z.enum(['unverified', 'email', 'identity_verified']),
   mfaEnabled: z.boolean(),
+  /**
+   * Active memberships in verified institutions. The client uses this to
+   * pick the X-Institution-Id claim (there is no other way to discover it:
+   * memberships are RLS-invisible without the claim).
+   */
+  memberships: z.array(membershipSummarySchema),
 });
 export type UserSummary = z.infer<typeof userSummarySchema>;
-
-export const membershipSummarySchema = z.object({
-  institutionId: uuidSchema,
-  institutionName: z.string(),
-  departmentId: uuidSchema.nullable(),
-  programmeId: uuidSchema.nullable(),
-  role: memberRoleSchema,
-  status: z.enum(['active', 'pending', 'revoked']),
-});
 
 export const loginResponseSchema = z.object({
   accessToken: z.string(),

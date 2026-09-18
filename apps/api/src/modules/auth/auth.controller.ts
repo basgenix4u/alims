@@ -136,7 +136,7 @@ export class AuthController {
       // Token valid but the account is gone — treat as unauthenticated.
       throw new UnauthorizedException('Authentication required.');
     }
-    return this.auth.toSummary(user);
+    return this.auth.summarize(user);
   }
 
   /** MFA enrolment — authenticated. Returns the plaintext secret exactly once. */

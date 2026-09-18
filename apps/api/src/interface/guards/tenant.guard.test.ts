@@ -38,7 +38,13 @@ function guardFor(membership: { id: string } | null): {
   findFirst: ReturnType<typeof vi.fn>;
 } {
   const findFirst = vi.fn(async () => membership);
-  const prisma = { membership: { findFirst } } as unknown as PrismaService;
+  const prisma = {
+    membership: { findFirst },
+    // resolve() proves membership INSIDE the claimed tenant.
+    withTenant: vi.fn(async (_ctx: unknown, work: (tx: unknown) => Promise<unknown>) =>
+      work(prisma),
+    ),
+  } as unknown as PrismaService;
   const service = new TenantContextService(prisma);
   return { guard: new TenantGuard(service), service, findFirst };
 }
