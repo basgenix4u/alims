@@ -95,10 +95,18 @@ export class TenantContextService {
       return { institutionId: null, userId };
     }
 
-    const membership = await this.prisma.membership.findFirst({
-      where: { userId, institutionId: claimedInstitutionId, status: 'active' },
-      select: { id: true },
-    });
+    // The membership table is row-level-security scoped to
+    // `current_institution_id()`, so the proof must run INSIDE the claimed
+    // tenant: with the GUC set, exactly that institution's rows are visible
+    // and a raw (context-free) query would always see none.
+    const membership = await this.prisma.withTenant(
+      { userId, institutionId: claimedInstitutionId },
+      (tx) =>
+        tx.membership.findFirst({
+          where: { userId, institutionId: claimedInstitutionId, status: 'active' },
+          select: { id: true },
+        }),
+    );
 
     if (!membership) {
       // Same safe message as the policy engine: do not confirm which tenants

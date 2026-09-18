@@ -1,8 +1,11 @@
-import type { RecordStatus, OutputType, RecordSummary } from '@alims/contracts';
+import type { RecordStatus } from '@alims/contracts';
 
 export type Bucket = { key: string; label: string; count: number };
 
-export function countByStatus(records: RecordSummary[]): Bucket[] {
+/** Any record view carrying the two fields the charts read. */
+export type ChartRecord = { status: RecordStatus | string; outputType: string };
+
+export function countByStatus(records: readonly ChartRecord[]): Bucket[] {
   const order: RecordStatus[] = [
     'draft',
     'submitted',
@@ -28,8 +31,8 @@ export function countByStatus(records: RecordSummary[]): Bucket[] {
   }));
 }
 
-export function countByType(records: RecordSummary[]): Bucket[] {
-  const counts = new Map<OutputType, number>();
+export function countByType(records: readonly ChartRecord[]): Bucket[] {
+  const counts = new Map<string, number>();
   for (const rec of records) {
     counts.set(rec.outputType, (counts.get(rec.outputType) ?? 0) + 1);
   }
