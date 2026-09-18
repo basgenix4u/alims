@@ -24,6 +24,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isReviewer =
     state.status === 'authenticated' || state.status === 'mfa-challenge';
 
+  // Member management: registry and institution administrators (PRD §4.3, §6.1).
+  const isMemberManager =
+    state.status === 'authenticated' &&
+    state.user.memberships.some(
+      (m) => m.status === 'active' && (m.role === 'registry' || m.role === 'inst_admin'),
+    );
+
   return (
     <div className="min-h-screen">
       <a href="#main" className="skip-link">
@@ -59,6 +66,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     className={`rounded px-2 py-1 ${pathname?.startsWith('/review') ? 'bg-brand text-white' : 'text-ink hover:bg-surface-subtle'}`}
                   >
                     {t('nav.review')}
+                  </Link>
+                </li>
+              ) : null}
+              {isMemberManager ? (
+                <li>
+                  <Link
+                    href="/institution/members"
+                    aria-current={pathname?.startsWith('/institution/members') ? 'page' : undefined}
+                    className={`rounded px-2 py-1 ${pathname?.startsWith('/institution/members') ? 'bg-brand text-white' : 'text-ink hover:bg-surface-subtle'}`}
+                  >
+                    {t('nav.members')}
                   </Link>
                 </li>
               ) : null}
