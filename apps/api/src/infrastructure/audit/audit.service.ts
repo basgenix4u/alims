@@ -26,6 +26,8 @@ export type AuditAction =
   | 'auth.step_up.granted'
   | 'auth.step_up.failure'
   | 'auth.step_up.consumed'
+  | 'auth.email.verification_requested'
+  | 'auth.email.verified'
   | 'institution.created'
   | 'institution.updated'
   | 'institution.status_changed'

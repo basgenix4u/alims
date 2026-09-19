@@ -501,6 +501,7 @@ model UserAccount {
   receiptDeposits   DepositReceipt[]  @relation("ReceiptDepositor")
   issuedCertificates Certificate[]   @relation("CertificateIssuer")
   disputes          Dispute[]
+  emailVerificationTokens EmailVerificationToken[]
 
   @@index([email])
   @@map("user_account")
@@ -533,6 +534,43 @@ model RefreshToken {
   @@index([userId])
   @@index([familyId])
   @@map("refresh_token")
+}
+
+/// PRD §9 / api_spec §3 — single-use, 24-hour, hash-looked-up tokens.
+/// Public confirm route: the SHA-256 hash IS the secret (refresh_token
+/// posture — no RLS). Issuing a new token supersedes all previous ones.
+model EmailVerificationToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash") @db.VarChar(128)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_token")
+}
+
+/// Durable outbox: every email is persisted before delivery. Without SMTP
+/// configured, rows honestly stay `pending` (the scanner's `unsupported`
+/// pattern — never claim a send that did not happen). The worker processor
+/// drains the box when a transport exists.
+model EmailOutbox {
+  id        String    @id @default(uuid()) @db.Uuid
+  toEmail   String    @map("to_email") @db.VarChar(320)
+  template  String    @db.VarChar(80)
+  subject   String    @db.VarChar(500)
+  bodyText  String    @map("body_text") @db.Text
+  status    String    @default("pending") @db.VarChar(20)
+  attempts  Int       @default(0)
+  lastError String?   @map("last_error") @db.VarChar(500)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz(6)
+
+  @@index([status, createdAt])
+  @@map("email_outbox")
 }
 
 model Membership {
