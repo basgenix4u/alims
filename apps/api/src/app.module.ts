@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validateEnv } from './config/env';
 import { PolicyModule } from './domain/policy/policy.module';
 import { AuditModule } from './infrastructure/audit/audit.module';
+import { EmailModule } from './infrastructure/email/email.module';
 import { PrismaModule } from './infrastructure/database/prisma.module';
 import { JwtAuthGuard } from './interface/guards/jwt-auth.guard';
 import { TenantGuard } from './interface/guards/tenant.guard';
@@ -27,6 +28,7 @@ import { RecordsModule } from './modules/records/records.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     PrismaModule,
     AuditModule,
+    EmailModule,
     TenantModule,
     PolicyModule,
     AuthModule,

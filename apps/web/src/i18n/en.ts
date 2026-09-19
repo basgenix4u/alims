@@ -222,6 +222,16 @@ export const en = {
     nxr: 'NXR identifier',
     notFound: 'This record does not exist or is not visible to you.',
   },
+  verifyEmail: {
+    title: 'Email verification',
+    success: 'Your email address is verified. Your account now carries email-level identity.',
+    failure: 'This verification link could not be confirmed.',
+    missingToken: 'No verification token was provided.',
+    banner: 'Your email address is not verified yet.',
+    resend: 'Resend verification email',
+    resent: 'Verification email queued. Check your inbox (and spam folder).',
+  },
+
   members: {
     title: 'Members',
     intro: 'Your institution\u2019s people. Adding, role changes and revocation are audited; revoked memberships keep their history.',

@@ -18,10 +18,12 @@ import {
   loginSchema,
   registerSchema,
   stepUpSchema,
+  verifyEmailConfirmSchema,
   type LoginInput,
   type RegisterInput,
   type StepUpInput,
   type UserSummary,
+  type VerifyEmailConfirmInput,
 } from '@alims/contracts';
 import {
   CurrentUser,
@@ -188,6 +190,32 @@ export class AuthController {
     @Req() req: AuthenticatedRequest,
   ): Promise<{ stepUpToken: string; expiresIn: number }> {
     return this.auth.stepUp(principal.userId, body.totpCode, this.contextOf(req));
+  }
+
+  @Post('verify-email/request')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Resend the verification email (always 204)' })
+  async requestVerification(
+    @CurrentUser() principal: AuthenticatedUser,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<void> {
+    // Always 204, never a body: the response must not reveal the
+    // account's verification state to a probing caller.
+    await this.auth.requestEmailVerification(principal.userId, this.contextOf(req));
+  }
+
+  @Public()
+  @Post('verify-email/confirm')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Confirm an email verification token from the link' })
+  async confirmVerification(
+    @Body(new ZodValidationPipe(verifyEmailConfirmSchema)) body: VerifyEmailConfirmInput,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ user: UserSummary }> {
+    const user = await this.auth.confirmEmailVerification(body.token, this.contextOf(req));
+    return { user };
   }
 
   /** Set the rotating refresh cookie and return the JSON body. */

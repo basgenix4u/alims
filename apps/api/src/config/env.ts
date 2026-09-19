@@ -106,6 +106,8 @@ const envSchema = z.object({
   UPLOAD_TOKEN_SECRET: secretSchema,
   /** ClamAV clamd host — when unset, scan results are honestly 'unsupported'. */
   AV_CLAMD_HOST: z.string().optional(),
+  /** SMTP connection URL — when unset, outbox emails honestly stay 'pending'. */
+  SMTP_URL: z.string().optional(),
   /** Public origin encoded into QR codes on certificates (no trailing slash). */
   PUBLIC_BASE_URL: z.string().url().default('http://localhost:3000'),
   AV_CLAMD_PORT: z.coerce.number().int().positive().default(3310),

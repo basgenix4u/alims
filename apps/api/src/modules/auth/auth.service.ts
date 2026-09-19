@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { UserAccount } from '@prisma/client';
@@ -10,6 +10,7 @@ import {
 } from '@alims/contracts';
 import type { Env } from '../../config/env';
 import { AuditService } from '../../infrastructure/audit/audit.service';
+import { EmailService } from '../../infrastructure/email/email.service';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { PasswordService } from './password.service';
 import { RecoveryCodeService } from './recovery-code.service';
@@ -73,6 +74,7 @@ export class AuthService {
     private readonly totp: TotpService,
     private readonly cipher: SecretCipherService,
     private readonly recovery: RecoveryCodeService,
+    private readonly emails: EmailService,
   ) {}
 
   /**
@@ -121,6 +123,11 @@ export class AuthService {
       ip: ctx.ip,
       userAgent: ctx.userAgent,
     });
+
+    // The contract `verificationEmailSent: true` is now TRUE: a single-use
+    // token is persisted and the email lands in the durable outbox (sent
+    // when SMTP is configured; honestly pending otherwise).
+    await this.issueEmailVerification(user.id, user.email);
 
     return { user: await this.summarize(user), verificationEmailSent: true };
   }
@@ -602,6 +609,116 @@ export class AuthService {
    * Never return the entity: passwordHash, mfaSecretEncrypted and
    * legalNameEncrypted must never reach a response body (PRD §9.1).
    */
+  // ── Email verification (api_specification.md §3) ──────────
+
+  /**
+   * (Re)send the verification email. Always 204 at the route — the response
+   * must not reveal the account's verification state. A no-op for accounts
+   * already at or beyond email verification.
+   */
+  async requestEmailVerification(userId: string, ctx: RequestContext): Promise<void> {
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id: userId },
+      select: { email: true, identityLevel: true },
+    });
+    if (!user || user.identityLevel !== 'unverified') {
+      return;
+    }
+    await this.issueEmailVerification(userId, user.email);
+    await this.audit.record({
+      action: 'auth.email.verification_requested',
+      subjectType: 'user_account',
+      subjectId: userId,
+      actorUserId: userId,
+      payload: {},
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
+  }
+
+  /**
+   * Confirm a verification token from the email link (public route).
+   * Single-use, 24-hour, hash-looked-up — the refresh_token posture.
+   * Promotes identityLevel unverified → email; never downgrades a higher
+   * level. Returns the updated user summary.
+   */
+  async confirmEmailVerification(rawToken: string, ctx: RequestContext): Promise<UserSummary> {
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const stored = await this.prisma.emailVerificationToken.findUnique({
+      where: { tokenHash },
+    });
+    if (!stored) {
+      throw new UnauthorizedException('This verification link is not valid.');
+    }
+    if (stored.consumedAt) {
+      throw new UnauthorizedException('This verification link has already been used.');
+    }
+    if (stored.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedException('This verification link has expired. Request a new one.');
+    }
+
+    const user = await this.prisma.userAccount.findUnique({ where: { id: stored.userId } });
+    if (!user) {
+      throw new UnauthorizedException('This verification link is not valid.');
+    }
+
+    await this.prisma.emailVerificationToken.update({
+      where: { id: stored.id },
+      data: { consumedAt: new Date() },
+    });
+
+    // unverified → email only; identity_verified is never downgraded.
+    const updated =
+      user.identityLevel === 'unverified'
+        ? await this.prisma.userAccount.update({
+            where: { id: user.id },
+            data: { identityLevel: 'email' },
+          })
+        : user;
+
+    await this.audit.record({
+      action: 'auth.email.verified',
+      subjectType: 'user_account',
+      subjectId: user.id,
+      actorUserId: user.id,
+      payload: {},
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
+
+    return this.summarize(updated);
+  }
+
+  /** Mint a fresh single-use token, supersede all previous, queue the email. */
+  private async issueEmailVerification(userId: string, email: string): Promise<void> {
+    const token = randomBytes(32).toString('base64url');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await this.prisma.$transaction([
+      // One live token per account: a resend supersedes the previous link.
+      this.prisma.emailVerificationToken.deleteMany({ where: { userId } }),
+      this.prisma.emailVerificationToken.create({
+        data: { id: randomUUID(), userId, tokenHash, expiresAt },
+      }),
+    ]);
+
+    const base = this.config.get('PUBLIC_BASE_URL', { infer: true }) ?? 'http://localhost:3000';
+    await this.emails.enqueue({
+      to: email,
+      template: 'email-verification',
+      subject: 'Verify your ALIMS email address',
+      bodyText: [
+        'Welcome to ALIMS.',
+        '',
+        'Confirm your email address by opening this link within 24 hours:',
+        `${base}/verify-email?token=${token}`,
+        '',
+        'If you did not create an ALIMS account, you can ignore this email.',
+      ].join('\n'),
+    });
+  }
+
   /**
    * Active memberships of `userId` in verified institutions.
    *

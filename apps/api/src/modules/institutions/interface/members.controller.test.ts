@@ -11,6 +11,8 @@ import { AuditModule } from '../../../infrastructure/audit/audit.module';
 import { PolicyModule } from '../../../domain/policy/policy.module';
 import { TenantModule } from '../../../interface/middleware/tenant.module';
 import { PrismaModule } from '../../../infrastructure/database/prisma.module';
+import { EmailModule } from '../../../infrastructure/email/email.module';
+import { EmailService } from '../../../infrastructure/email/email.service';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import { ProblemDetailsFilter } from '../../../interface/filters/problem-details.filter';
 import { PolicyGuard } from '../../../interface/guards/policy.guard';
@@ -69,10 +71,14 @@ describe('Members HTTP API (api_specification.md §4)', () => {
         PolicyModule,
         TenantModule,
         PrismaModule,
+        EmailModule,
       ],
     })
       .overrideProvider(PrismaService)
       .useValue({})
+      // No SMTP in unit tests: the honest not-configured outbox stub.
+      .overrideProvider(EmailService)
+      .useValue({ enqueue: vi.fn(async () => ({ outboxId: 'x', delivered: false })) })
       // Capability enforcement is PolicyGuard's job and is proven by the
       // integration suite + live journey; here it would only crash against
       // the stub Prisma, so it passes through.
