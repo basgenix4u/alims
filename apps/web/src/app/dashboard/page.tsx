@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart } from '@/features/charts/bar-chart';
 import { countByStatus, countByType } from '@/features/charts/aggregate';
@@ -26,11 +27,22 @@ const STATUS_TONES: Record<string, StatusTone> = {
 export default function DashboardPage() {
   const { t } = useI18n();
   const { state } = useSession();
+  const [resendState, setResendState] = useState<'idle' | 'busy' | 'sent'>('idle');
   const query = useQuery({
     queryKey: ['records', 'mine'],
     queryFn: () => api.records.list({ limit: 100 }),
     enabled: state.status === 'authenticated',
   });
+
+  const resendVerification = async () => {
+    setResendState('busy');
+    try {
+      // Always 204 — the outcome is an email, not a response body.
+      await api.auth.verifyEmail.request();
+    } finally {
+      setResendState('sent');
+    }
+  };
 
   const records: RecordEntity[] = query.data?.items ?? [];
   const byStatus = countByStatus(records);
@@ -65,6 +77,26 @@ export default function DashboardPage() {
         <p className="text-ink-muted">{t('dashboard.intro')}</p>
         <p className="text-sm text-ink-muted">{t('common.notYou', { name: state.user.displayName })}</p>
       </header>
+
+      {state.user.identityLevel === 'unverified' ? (
+        <div role="note" className="tone-advisory flex flex-wrap items-center gap-3 rounded-md border-2 px-4 py-3">
+          <span className="text-sm">{t('verifyEmail.banner')}</span>
+          {resendState === 'sent' ? (
+            <span role="status" className="text-sm font-semibold">
+              {t('verifyEmail.resent')}
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={resendState === 'busy'}
+              onClick={() => void resendVerification()}
+            >
+              {t('verifyEmail.resend')}
+            </button>
+          )}
+        </div>
+      ) : null}
 
       {query.isLoading ? <p role="status">{t('dashboard.loading')}</p> : null}
 

@@ -30,6 +30,13 @@ export const totpCodeSchema = z.string().regex(/^\d{6}$/, 'Enter the 6-digit cod
 export const stepUpSchema = z.object({ totpCode: totpCodeSchema });
 export type StepUpInput = z.infer<typeof stepUpSchema>;
 
+/** Email verification (api_specification.md §3): the token from the email link. */
+export const verifyEmailConfirmSchema = z.object({
+  token: z.string().trim().min(20).max(200),
+});
+export type VerifyEmailConfirmInput = z.infer<typeof verifyEmailConfirmSchema>;
+
+
 export const membershipSummarySchema = z.object({
   institutionId: uuidSchema,
   institutionName: z.string(),
@@ -55,6 +62,10 @@ export const userSummarySchema = z.object({
   memberships: z.array(membershipSummarySchema),
 });
 export type UserSummary = z.infer<typeof userSummarySchema>;
+export const verifyEmailConfirmResponseSchema = z.object({
+  user: userSummarySchema,
+});
+export type VerifyEmailConfirmResponse = z.infer<typeof verifyEmailConfirmResponseSchema>;
 
 export const loginResponseSchema = z.object({
   accessToken: z.string(),

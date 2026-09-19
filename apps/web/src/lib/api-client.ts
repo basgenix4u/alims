@@ -11,6 +11,7 @@ import {
   registerSchema,
   similarityAssessmentSchema,
   updateMemberSchema,
+  verifyEmailConfirmResponseSchema,
   userSummarySchema,
   type AddMemberInput,
   type BulkInvitationResult,
@@ -398,6 +399,16 @@ export const api = {
     logout: async () => {
       await request('/auth/logout', { method: 'POST' }, () => null);
       setAccessToken(null);
+    },
+    verifyEmail: {
+      /** Always 204 — never reveals the account's verification state. */
+      request: () => request('/auth/verify-email/request', { method: 'POST' }, () => null),
+      confirm: (token: string) =>
+        request(
+          '/auth/verify-email/confirm',
+          { method: 'POST', body: JSON.stringify({ token }) },
+          (d) => verifyEmailConfirmResponseSchema.parse(d),
+        ),
     },
     mfaEnroll: () =>
       request('/auth/mfa/enroll', { method: 'POST' }, (d) => mfaEnrollResponseSchema.parse(d)),

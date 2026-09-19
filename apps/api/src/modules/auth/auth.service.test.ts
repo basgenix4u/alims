@@ -50,6 +50,7 @@ class FakeDb {
   users = new Map<string, UserAccount>();
   refreshTokens = new Map<string, RefreshRow>();
   recoveryCodes = new Map<string, RecoveryRow>();
+  verificationTokens = new Map<string, { id: string; userId: string; tokenHash: string; expiresAt: Date; consumedAt: Date | null }>();
   private seq = 0;
 
   nextId(prefix: string): string {
@@ -197,6 +198,37 @@ function makeHarness(): {
     // my_memberships(): the unit fake has no memberships (SECURITY DEFINER
     // path is covered by the integration suite against real PostgreSQL).
     $queryRaw: vi.fn(async () => []),
+    // Email verification tokens + outbox (the integration suite covers
+    // real persistence; the fake stores rows for the confirm-flow tests).
+    emailVerificationToken: {
+      findUnique: vi.fn(async ({ where }: { where: { tokenHash: string } }) =>
+        [...db.verificationTokens.values()].find((t) => t.tokenHash === where.tokenHash) ?? null,
+      ),
+      deleteMany: vi.fn(async ({ where }: { where: { userId: string } }) => {
+        let count = 0;
+        for (const [id, t] of db.verificationTokens) {
+          if (t.userId === where.userId) {
+            db.verificationTokens.delete(id);
+            count += 1;
+          }
+        }
+        return { count };
+      }),
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { consumedAt: null, ...data } as { id: string };
+        db.verificationTokens.set(row.id, row);
+        return row;
+      }),
+      update: vi.fn(async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+        const row = db.verificationTokens.get(where.id);
+        if (!row) return null;
+        Object.assign(row, data);
+        return row;
+      }),
+    },
+    emailOutbox: {
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: 'outbox-1', ...data })),
+    },
     // Prisma's array form of $transaction: the promises are already running.
     $transaction: vi.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
   } as unknown as PrismaService;
@@ -213,6 +245,9 @@ function makeHarness(): {
   const totp = new TotpService();
   const cipher = new SecretCipherService(config);
   const recovery = new RecoveryCodeService(config, prisma, totp);
+  const emails = {
+    enqueue: vi.fn(async () => ({ outboxId: 'outbox-1', delivered: false, reason: 'smtp_not_configured' as const })),
+  };
   const service = new AuthService(
     prisma,
     passwords,
@@ -222,9 +257,10 @@ function makeHarness(): {
     totp,
     cipher,
     recovery,
+    emails,
   );
 
-  return { service, db, audit, passwords, tokens, totp, cipher, recovery };
+  return { service, db, audit, passwords, tokens, totp, cipher, recovery, emails };
 }
 
 describe('AuthService — registration', () => {
@@ -868,5 +904,86 @@ describe('AuthService — MFA recovery codes (spec §3)', () => {
     await expect(service.verifyMfa(strangerAccess, ownerCode, CTX)).rejects.toThrow(
       'Invalid MFA code.',
     );
+  });
+});
+
+describe('AuthService — email verification (api_specification.md §3)', () => {
+  const CTX: RequestContext = { ip: '127.0.0.1', userAgent: 'vitest' };
+
+  /** Register a fresh user and extract the raw token from the queued email link. */
+  async function registerAndGetToken() {
+    const harness = makeHarness();
+    const { service, emails, db } = harness;
+    await service.register(
+      { email: 'verify@university.edu', password: 'a-very-strong-password-1', displayName: 'Verifier' },
+      CTX,
+    );
+    const body = (emails.enqueue as ReturnType<typeof vi.fn>).mock.calls.at(-1)![0].bodyText as string;
+    const token = /token=([A-Za-z0-9_-]+)/.exec(body)![1]!;
+    const row = [...db.verificationTokens.values()][0]!;
+    return { harness, service, emails, db, token, row };
+  }
+
+  it('register queues a verification email with a single-use link', async () => {
+    const { emails } = await registerAndGetToken();
+    expect(emails.enqueue).toHaveBeenCalledTimes(1);
+    const call = (emails.enqueue as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+    expect(call.to).toBe('verify@university.edu');
+    expect(call.template).toBe('email-verification');
+    expect(call.bodyText).toContain('/verify-email?token=');
+  });
+
+  it('confirm promotes the account to identityLevel email and consumes the token', async () => {
+    const { service, db, token, row } = await registerAndGetToken();
+    const result = await service.confirmEmailVerification(token, CTX);
+    expect(result.identityLevel).toBe('email');
+    expect(row.consumedAt).not.toBeNull();
+    const stored = db.users.get(result.id)!;
+    expect(stored.identityLevel).toBe('email');
+  });
+
+  it('a consumed token cannot be reused (401)', async () => {
+    const { service, token } = await registerAndGetToken();
+    await service.confirmEmailVerification(token, CTX);
+    await expect(service.confirmEmailVerification(token, CTX)).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('a tampered token is rejected (401)', async () => {
+    const { service } = await registerAndGetToken();
+    await expect(
+      service.confirmEmailVerification('totally-made-up-token-value-123456', CTX),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('an expired token is rejected with the resend hint (401)', async () => {
+    const { service, db, token, row } = await registerAndGetToken();
+    row.expiresAt = new Date(Date.now() - 1000);
+    db.verificationTokens.set(row.id, row);
+    await expect(service.confirmEmailVerification(token, CTX)).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('a resend supersedes the previous token', async () => {
+    const { service, emails, db, token } = await registerAndGetToken();
+    await service.requestEmailVerification(db.users.values().next().value!.id, CTX);
+    expect(emails.enqueue).toHaveBeenCalledTimes(2);
+    // Old link dead, exactly one live row.
+    await expect(service.confirmEmailVerification(token, CTX)).rejects.toMatchObject({ status: 401 });
+    expect(db.verificationTokens.size).toBe(1);
+  });
+
+  it('request is a no-op for an already-verified account', async () => {
+    const { service, emails, db, token } = await registerAndGetToken();
+    const userId = db.users.values().next().value!.id;
+    await service.confirmEmailVerification(token, CTX);
+    await service.requestEmailVerification(userId, CTX);
+    expect(emails.enqueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('verification never downgrades a higher identity level', async () => {
+    const { service, db, token } = await registerAndGetToken();
+    const user = db.users.values().next().value!;
+    user.identityLevel = 'identity_verified';
+    const result = await service.confirmEmailVerification(token, CTX);
+    expect(result.identityLevel).toBe('identity_verified');
   });
 });
