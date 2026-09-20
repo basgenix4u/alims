@@ -108,6 +108,14 @@ const envSchema = z.object({
   AV_CLAMD_HOST: z.string().optional(),
   /** SMTP connection URL — when unset, outbox emails honestly stay 'pending'. */
   SMTP_URL: z.string().optional(),
+  /** From-address for system email. */
+  SMTP_FROM: z.string().default('ALIMS <no-reply@alims.org>'),
+  /** Worker poll cadence (ms) for all processors. */
+  WORKER_POLL_INTERVAL_MS: z.coerce.number().int().min(250).default(5_000),
+  /** Dead-letter threshold for outbox delivery attempts. */
+  OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().positive().max(100).default(10),
+  /** Abandoned multipart sessions older than this are expired and swept. */
+  UPLOAD_SESSION_TTL_HOURS: z.coerce.number().int().positive().default(24),
   /** Public origin encoded into QR codes on certificates (no trailing slash). */
   PUBLIC_BASE_URL: z.string().url().default('http://localhost:3000'),
   AV_CLAMD_PORT: z.coerce.number().int().positive().default(3310),
