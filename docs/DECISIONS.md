@@ -122,3 +122,23 @@ Every significant architectural decision, in order. Each entry records what was 
 **Decision.** The PRD's most erodible rules are build checks: no score columns in the schema, exactly 14 CRediT roles, similarity code cannot write status, public projection stays clean, app role cannot bypass RLS, audit chain verifies.
 
 **Why.** Principles in documents decay; checks in CI don't. A well-meaning "just this once" PR is exactly how the product's promises would die.
+
+---
+
+## ADR-012 — Release-1 workers are DB-backed pollers, not a broker
+
+**Status:** Accepted · **Date:** 2026-09
+
+**Decision.** The worker process (`node dist/worker/worker.js`) runs four
+idempotent polling processors over durable database state — the email
+outbox, stranded scan statuses, expired embargos, abandoned upload
+sessions — instead of adopting Redis + BullMQ for Release 1. Cross-tenant
+sweeps go through single-purpose SECURITY DEFINER functions, mirroring
+the `upload_record_part` / `my_memberships` precedent.
+
+**Why.** The queues already exist as rows: the outbox IS a durable queue,
+`scan_status='pending'` IS a work item, `embargo_until <= now()` IS a due
+job. A broker would add infrastructure, failure modes and deployment
+surface without changing what is true. `--once` mode covers cron-style
+deployments. BullMQ remains the plan (ARCHITECTURE.md) when throughput
+actually demands a broker; this decision should be revisited then.

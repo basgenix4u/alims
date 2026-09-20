@@ -9,7 +9,8 @@
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "start:worker": "node dist/worker/worker.js"
   },
   "dependencies": {
     "@alims/contracts": "workspace:*",
@@ -27,6 +28,7 @@
     "helmet": "^8.0.0",
     "jose": "^5.9.6",
     "nestjs-pino": "^4.1.0",
+    "nodemailer": "^10.0.10",
     "pdf-lib": "^1.17.1",
     "pino": "^9.5.0",
     "pino-http": "^10.3.0",
@@ -43,6 +45,7 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "^1.5.6",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^8.15.0",

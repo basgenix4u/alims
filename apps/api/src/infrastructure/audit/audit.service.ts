@@ -52,6 +52,8 @@ export type AuditAction =
   | 'certificate.superseded'
   | 'integrity.escalated'
   | 'similarity.reviewed'
+  | 'record.embargo_lifted'
+  | 'upload.expired'
   | 'policy.denied';
 
 export interface AuditInput {
