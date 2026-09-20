@@ -563,13 +563,14 @@ model EmailOutbox {
   template  String    @db.VarChar(80)
   subject   String    @db.VarChar(500)
   bodyText  String    @map("body_text") @db.Text
-  status    String    @default("pending") @db.VarChar(20)
-  attempts  Int       @default(0)
-  lastError String?   @map("last_error") @db.VarChar(500)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  sentAt    DateTime? @map("sent_at") @db.Timestamptz(6)
+  status        String    @default("pending") @db.VarChar(20)
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error") @db.VarChar(500)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  sentAt        DateTime? @map("sent_at") @db.Timestamptz(6)
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
 
-  @@index([status, createdAt])
+  @@index([status, nextAttemptAt])
   @@map("email_outbox")
 }
 
