@@ -1,0 +1,32 @@
+// ALIMS production data model (PostgreSQL). Migrate with: npx prisma migrate deploy
+// Prototype JSON store maps 1:1 to these models; API shapes unchanged.
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+generator client { provider = "prisma-client-js" }
+
+model User {
+  id String @id @default(cuid()); name String; email String @unique; passwordHash String
+  role String; institutionId String?; orcid String?; emailVerified DateTime?
+  resetTokenHash String?; resetTokenExp DateTime?; verifyTokenHash String?
+  createdAt DateTime @default(now()); records Record[] @relation("owner")
+}
+model Institution {
+  id String @id; name String; short String; city String; country String @default("Nigeria")
+  status String @default("Pending Verification"); domain String?; records Record[]
+}
+model Record {
+  id String @id @default(cuid()); nxrId String @unique; title String; type String
+  abstract String; discipline String; status String; verification String; access String
+  embargoUntil DateTime?; ownerId String; owner User @relation("owner", fields: [ownerId], references: [id])
+  institutionId String?; institution Institution? @relation(fields: [institutionId], references: [id])
+  supervisorName String?; keywords String[]; versions Json @default("[]"); contributors Json @default("[]")
+  nerd Json?; files Json @default("[]"); similarity Json?; certificate Json?
+  views Int @default(0); saves Int @default(0); createdAt DateTime @default(now())
+  @@index([discipline, verification]); @@index([institutionId, status])
+}
+model Opportunity { id String @id @default(cuid()); title String; type String; ownerId String; status String @default("Open"); responses Int @default(0); createdAt DateTime @default(now()) }
+model AccessRequest { id String @id @default(cuid()); recordId String; requesterId String; purpose String; status String @default("Pending"); createdAt DateTime @default(now()) }
+model Dispute { id String @id @default(cuid()); category String; recordId String?; raisedBy String; status String @default("Triage"); createdAt DateTime @default(now()) }
+model ApiKey { id String @id @default(cuid()); name String; keyHash String; scopes String[]; active Boolean @default(true); lastUsed DateTime?; createdAt DateTime @default(now()) }
+model CommsLog { id String @id @default(cuid()); channel String; recipient String; template String; body String; status String; createdAt DateTime @default(now()) }
+model Waitlist { id String @id @default(cuid()); email String @unique; role String; institution String?; createdAt DateTime @default(now()) }
+model AuditLog { id String @id @default(cuid()); actorId String; action String; entity String; entityId String; meta Json?; createdAt DateTime @default(now()) }

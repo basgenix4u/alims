@@ -1,0 +1,6 @@
+services:
+  db: { image: postgres:16-alpine, environment: { POSTGRES_DB: alims, POSTGRES_USER: alims, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}" }, volumes: ["alims-pg:/var/lib/postgresql/data"], restart: unless-stopped }
+  redis: { image: redis:7-alpine, restart: unless-stopped }
+  api: { build: ./server, environment: ["DATABASE_URL=postgresql://alims:${POSTGRES_PASSWORD}@db:5432/alims", "REDIS_URL=redis://redis:6379", "PORT=4000"], depends_on: [db, redis], restart: unless-stopped }
+  web: { build: ./client, ports: ["80:80"], depends_on: [api], restart: unless-stopped }
+volumes: { alims-pg: {} }

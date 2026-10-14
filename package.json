@@ -1,0 +1,10 @@
+{
+  "name": "alims",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB \"node server/index.js\" \"npm --prefix client run dev\"",
+    "start": "node server/index.js",
+    "build": "npm --prefix client run build"
+  },
+  "devDependencies": { "concurrently": "^9.1.2" }
+}

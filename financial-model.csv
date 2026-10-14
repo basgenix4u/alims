@@ -1,0 +1,12 @@
+ALIMS Illustrative Financial Model (NGN millions unless stated)
+Year,1,2,3
+Paying institutions,6,28,85
+Avg revenue per institution (NGN M),2.2,2.8,3.2
+SaaS revenue,13.2,78.4,272.0
+Verify API + challenges revenue,1.5,12.0,48.0
+Total revenue,14.7,90.4,320.0
+COGS (cloud providers support) %,38,29,24
+Gross margin %,62,71,76
+Team FTE,6,14,26
+Pilot->paid conversion %,60,60,60
+Annual churn %,8,8,8
