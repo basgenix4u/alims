@@ -1,5 +1,7 @@
 # ALIMS — The Global Academic Knowledge Infrastructure
 
+**Live:** https://alims-app.onrender.com · **Repo:** https://github.com/basgenix4u/alims-app (public) · **Demo accounts:** password `demo1234` for all (see table below)
+
 **Preserve. Connect. Activate.** · *Mapping the World's Academic Lineage*
 
 A full-stack implementation of the ALIMS PRD (v2.0) — a verified academic knowledge
