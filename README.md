@@ -1,6 +1,8 @@
 # ALIMS — The Global Academic Knowledge Infrastructure
 
-**Live:** https://alims-app.onrender.com · **Repo:** https://github.com/basgenix4u/alims-app (public) · **Demo accounts:** password `demo1234` for all (see table below)
+**Live (frontend):** https://alims-devs-projects-deb15629.vercel.app · **API (backend):** https://alims-app.onrender.com · **Repo:** https://github.com/basgenix4u/alims (public) · **Demo accounts:** password `demo1234` for all (see table below)
+
+Deployment shape: the React frontend is hosted on Vercel; the Express API runs on Render (free tier, kept awake by `.github/workflows/keep-alive.yml`). The frontend build points at the API via `VITE_API_URL`.
 
 **Preserve. Connect. Activate.** · *Mapping the World's Academic Lineage*
 
