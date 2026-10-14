@@ -31,7 +31,7 @@ function Overview({ user, go, toast }) {
     </div>}
     <div style={{display:'grid',gridTemplateColumns:'1.35fr 1fr',gap:18}} className="ov-grid">
       <section className="card" style={{padding:24}} aria-label="Your recent records">
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><h3 style={{margin:0,fontSize:19}}>Your recent records</h3><button className="btn ghost small" onClick={()=>go('records')}>View all</button></div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}><h3 style={{margin:0,fontSize:19}}>Your recent records</h3><button className="btn ghost small" onClick={()=>go('records')}>View all</button></div>
         {mine.length===0 ? <p style={{color:'var(--muted)',lineHeight:1.7}}>No records yet. Create your first Research Record — you can save a draft with just a title and finish later.</p> :
         <div style={{display:'grid',gap:12,marginTop:16}}>{mine.slice(0,3).map(r=><RecordRow key={r.id} r={r} go={go}/>)}</div>}
       </section>
@@ -42,14 +42,13 @@ function Overview({ user, go, toast }) {
           <strong style={{fontSize:14.5,lineHeight:1.5,display:'block'}}>{s.title}</strong>
           <p style={{fontSize:13.5,color:'var(--muted)',lineHeight:1.65,margin:'7px 0'}}>{s.why}</p>
           <span className="badge amber">{s.confidence}</span>
-          <div style={{display:'flex',gap:8,marginTop:12}}>
+          <div style={{display:'flex',gap:8,marginTop:12,flexWrap:'wrap'}}>
             <button className="btn primary small" onClick={()=>{ setDismissed(d=>[...d,s.id]); go('record:'+s.recordId); }}>Explore</button>
             <button className="btn ghost small" onClick={()=> setDismissed(d=>[...d,s.id])}>Dismiss</button>
           </div></div>)}
         {sugg.filter(s=>!dismissed.includes(s.id)).length===0 && <p style={{color:'var(--muted)',fontSize:14}}>All caught up. New suggestions appear as related work is deposited.</p>}
       </section>
     </div>
-    <style>{`@media(max-width:900px){.ov-grid{grid-template-columns:1fr!important}}`}</style>
   </div>;
 }
 
@@ -60,7 +59,7 @@ export function RecordRow({ r, go }) {
       <h4 style={{margin:'0 0 6px',fontSize:16.5,lineHeight:1.45}}>{r.title}</h4>
       <p style={{margin:0,fontSize:13.5,color:'var(--muted)'}}>{r.nxrId} · {r.institutionName} · {r.type} · {r.year} · {r.ownerName}</p>
     </div>
-    <div style={{textAlign:'right',fontSize:12.5,color:'var(--muted)',flex:'none',fontFamily:'"IBM Plex Mono",monospace'}}><div style={{display:'flex',gap:5,alignItems:'center',justifyContent:'flex-end'}}><Icon name="eye" size={14}/>{(r.views||0).toLocaleString()}</div><div style={{display:'flex',gap:5,alignItems:'center',justifyContent:'flex-end'}}><Icon name="bookmark" size={14}/>{(r.saves||0)}</div></div>
+    <div className="rec-meta"><div className="rec-stat"><Icon name="eye" size={14}/>{(r.views||0).toLocaleString()}</div><div className="rec-stat"><Icon name="bookmark" size={14}/>{(r.saves||0)}</div></div>
   </article>;
 }
 
@@ -101,7 +100,7 @@ export function RecordForm({ initial, institutions, user, onSave, onCancel, savi
     <div className="field"><label className="lbl">Licence / rights statement *</label><input className="input" required value={f.licence} onChange={e=>set('licence',e.target.value)}/></div>
     <label style={{display:'flex',gap:10,alignItems:'flex-start',fontSize:14.5,marginBottom:10}}><input type="checkbox" checked={f.seekingContinuation} onChange={e=>set('seekingContinuation',e.target.checked)} style={{marginTop:3}}/> <span><strong>Incomplete — Seeking Continuation.</strong> Invite collaborators to continue this work under a collaboration charter (roles, confidentiality, credit & IP agreed before private material is shared).</span></label>
     <label style={{display:'flex',gap:10,alignItems:'center',fontSize:14.5,marginBottom:18}}><input type="checkbox" checked={f.datasetAvailable} onChange={e=>set('datasetAvailable',e.target.checked)}/> Dataset available &nbsp; <input type="checkbox" checked={f.codeAvailable} onChange={e=>set('codeAvailable',e.target.checked)}/> Code / software available</label>
-    <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}><button type="button" className="btn ghost" onClick={onCancel}>Cancel</button><button className="btn primary" disabled={saving}>{saving?'Saving…':'Save Research Record'}</button></div>
+    <div style={{display:'flex',gap:10,justifyContent:'flex-end',flexWrap:'wrap'}}><button type="button" className="btn ghost" onClick={onCancel}>Cancel</button><button className="btn primary" disabled={saving}>{saving?'Saving…':'Save Research Record'}</button></div>
   </form>;
 }
 
@@ -124,7 +123,7 @@ function RecordsPage({ user, go, toast }) {
     </div>
     {!list ? <Skeleton/> : shown.length===0 ? <Empty icon="sprout" title="Nothing here yet" text="Records you create will live here — preserved beyond graduation, versioned, and verifiable. Start with just a title; you can save a draft and complete it later." action={<button className="btn primary" onClick={()=>setShowForm(true)}>Create your first record</button>}/> :
     <div style={{display:'grid',gap:14}}>{shown.map(r=><div key={r.id} style={{position:'relative'}}><RecordRow r={r} go={go}/>
-      {(r.ownerId===user.id && ['Draft','Returned for Revision'].includes(r.status)) && <div style={{display:'flex',gap:8,marginTop:8}}>
+      {(r.ownerId===user.id && ['Draft','Returned for Revision'].includes(r.status)) && <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
         <button className="btn ghost small" onClick={()=>{setEdit(r);setShowForm(true)}}>Edit draft</button>
         <button className="btn ghost small" style={{color:'var(--red)'}} onClick={()=>del(r)}>Delete</button></div>}</div>)}</div>}
     {showForm && <div className="modal-bg" onClick={()=>setShowForm(false)}><div className="modal" onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Research Record form">
@@ -196,12 +195,12 @@ function RecordDetail({ id, user, go, toast }) {
       </section>
       <section className="card" style={{padding:24}}><h3 style={{margin:'0 0 6px'}}>Contribution Ledger</h3>
         <p style={{fontSize:13,color:'var(--muted)',lineHeight:1.6}}>CRediT roles · Lead / Equal / Supporting. Rank never auto-generates credit. Disputes stay private to authorised parties until resolved.</p>
-        {(r.contributors||[]).map((c,i)=><div key={i} style={{display:'flex',gap:12,alignItems:'flex-start',padding:'12px 0',borderBottom:'1px solid var(--line)'}}>
+        {(r.contributors||[]).map((c,i)=><div key={i} style={{display:'flex',gap:12,alignItems:'flex-start',flexWrap:'wrap',padding:'12px 0',borderBottom:'1px solid var(--line)'}}>
           <span className="avatar">{initials(c.name)}</span><div style={{flex:1}}><strong style={{fontSize:14.5}}>{c.name}</strong> <span className={`badge ${c.status==='Disputed'?'red':c.status==='Acknowledged'?'green':'amber'}`}>{c.status}</span>
           <div style={{fontSize:13,color:'var(--muted)',marginTop:3}}>{(c.roles||[]).join(' · ')} — {c.level}</div></div>
-          {c.name===user.name && c.status!=='Acknowledged' && <div style={{display:'flex',gap:6}}><button className="btn primary small" onClick={()=>act(()=>api.respondContributor(r.id,c.name,'acknowledge'),'Contribution acknowledged and recorded in the ledger.')}>Acknowledge</button><button className="btn ghost small" onClick={()=>act(()=>api.respondContributor(r.id,c.name,'dispute','Contributor disputes the declared role/level.'),'Marked Disputed and routed privately to the institutional dispute process. You have not been removed.')}>Dispute</button></div>}
+          {c.name===user.name && c.status!=='Acknowledged' && <div style={{display:'flex',gap:6,flexWrap:'wrap'}}><button className="btn primary small" onClick={()=>act(()=>api.respondContributor(r.id,c.name,'acknowledge'),'Contribution acknowledged and recorded in the ledger.')}>Acknowledge</button><button className="btn ghost small" onClick={()=>act(()=>api.respondContributor(r.id,c.name,'dispute','Contributor disputes the declared role/level.'),'Marked Disputed and routed privately to the institutional dispute process. You have not been removed.')}>Dispute</button></div>}
         </div>)}
-        {r.certificate && <div style={{marginTop:18,background:'var(--mint)',borderRadius:14,padding:16,display:'flex',gap:16,alignItems:'center'}}>
+        {r.certificate && <div style={{marginTop:18,background:'var(--mint)',borderRadius:14,padding:16,display:'flex',gap:16,alignItems:'center',flexWrap:'wrap'}}>
           <div className="qrbox" aria-hidden="true"><span>ALIMS <Icon name="check" size={11}/></span></div>
           <div style={{fontSize:13.5,lineHeight:1.65}}><strong className="mono">Certificate {r.certificate.id}</strong> {r.certificate.status==='Valid' && <span className="stamp" style={{marginLeft:8}}><Icon name="badge-check" size={13}/> Valid</span>} · <span className={`badge ${r.certificate.status==='Valid'?'green':'amber'}`}>{r.certificate.status}</span><br/>Issued {r.certificate.issuedAt} · Anyone can verify at <button className="btn ghost small" onClick={()=>go('verify:'+r.certificate.id)}>Verify page</button><br/><span style={{color:'var(--muted)'}}>The QR resolves only to public verification status — no sensitive data is embedded in it.</span></div></div>}
       </section>
@@ -212,7 +211,7 @@ function RecordDetail({ id, user, go, toast }) {
       <p style={{color:'var(--muted)',fontSize:14,lineHeight:1.65}}>The owner (and institution, where configured) decides. <strong>No private email or contact detail is shared without consent</strong>, and requesting access grants no rights to the work.</p>
       <div className="field"><label className="lbl">Purpose</label><select className="input" id="ar-purpose"><option>Collaboration discussion</option><option>Pilot partnership scoping</option><option>Methods / instrument reuse (with citation)</option><option>Funding / sponsorship inquiry</option><option>Recruitment / talent opportunity</option></select></div>
       <div className="field"><label className="lbl">Your message</label><textarea className="input" rows={4} value={accessMsg} onChange={e=>setAccessMsg(e.target.value)} placeholder="Who you are, what you propose, and what you will not do without agreement…"/></div>
-      <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}><button className="btn ghost" onClick={()=>setShowAccess(false)}>Cancel</button>
+      <div style={{display:'flex',gap:10,justifyContent:'flex-end',flexWrap:'wrap'}}><button className="btn ghost" onClick={()=>setShowAccess(false)}>Cancel</button>
       <button className="btn primary" onClick={async()=>{ try{ await api.createAccessRequest({recordId:r.id,purpose:document.getElementById('ar-purpose').value,message:accessMsg}); setShowAccess(false); toast('Request sent through ALIMS. The owner receives it without exposing your private contact details.'); }catch(e){ toast(e.message); }}}>Send via ALIMS</button></div>
     </div></div>}
   </div>;
@@ -290,7 +289,7 @@ function Opportunities({ user, go, toast }) {
         <div className="field"><label className="lbl">Problem statement *</label><textarea className="input" rows={4} required value={f.description} onChange={e=>setF({...f,description:e.target.value})} placeholder="What is done, what is needed, what is explicitly not granted by discovery…"/></div>
         <div className="grid2"><div className="field"><label className="lbl">Desired roles / needs</label><input className="input" value={f.needs} onChange={e=>setF({...f,needs:e.target.value})}/></div>
         <div className="field"><label className="lbl">Deadline</label><input type="date" className="input" value={f.deadline||''} onChange={e=>setF({...f,deadline:e.target.value})}/></div></div>
-        <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}><button type="button" className="btn ghost" onClick={()=>setShow(false)}>Cancel</button><button className="btn primary" disabled={saving}>{saving?'Saving…':'Publish opportunity'}</button></div>
+        <div style={{display:'flex',gap:10,justifyContent:'flex-end',flexWrap:'wrap'}}><button type="button" className="btn ghost" onClick={()=>setShow(false)}>Cancel</button><button className="btn primary" disabled={saving}>{saving?'Saving…':'Publish opportunity'}</button></div>
       </form></div></div>}
   </div>;
 }
@@ -346,7 +345,7 @@ export function RequestsPage({ user, toast }) {
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:8}}><span className={`badge ${a.status==='Approved'?'green':a.status==='Declined'?'red':'amber'}`}>{a.status}</span><span className="badge gray">{a.purpose}</span><span className="badge gray">{a.date}</span></div>
     <strong style={{lineHeight:1.5}}>{a.recordTitle}</strong>
     <p style={{fontSize:14,color:'var(--muted)',margin:'8px 0'}}>{a.requester}</p><p style={{lineHeight:1.7,margin:'0 0 12px'}}>{a.message}</p>
-    {a.status==='Pending' && <div style={{display:'flex',gap:8}}><button className="btn primary small" onClick={()=>respond(a,'Approved')}>Approve</button><button className="btn ghost small" onClick={()=>respond(a,'More info requested')}>Request more info</button><button className="btn ghost small" style={{color:'var(--red)'}} onClick={()=>respond(a,'Declined')}>Decline (neutral)</button></div>}
+    {a.status==='Pending' && <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button className="btn primary small" onClick={()=>respond(a,'Approved')}>Approve</button><button className="btn ghost small" onClick={()=>respond(a,'More info requested')}>Request more info</button><button className="btn ghost small" style={{color:'var(--red)'}} onClick={()=>respond(a,'Declined')}>Decline (neutral)</button></div>}
   </article>)}</div>}</div>;
 }
 export function DisputesPage({ user, records, toast }) {
@@ -359,20 +358,20 @@ export function DisputesPage({ user, records, toast }) {
   <div style={{display:'grid',gap:14,marginTop:16}}>{list.map(d=><article key={d.id} className="card" style={{padding:20}}>
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:8}}><span className="badge amber">{d.category}</span><span className={`badge ${d.status==='Resolved'?'green':d.status==='Dismissed'?'gray':'blue'}`}>{d.status}</span><span className="badge gray">{d.date}</span></div>
     <strong>{d.recordTitle||'General'}</strong><p style={{fontSize:13.5,color:'var(--muted)',margin:'6px 0'}}>Raised by {d.raisedBy} · {d.visibility}</p><p style={{lineHeight:1.7,margin:0}}>{d.detail}</p>
-    {['Department Admin','Librarian','Supervisor'].includes(user.role) && d.status!=='Resolved' && <div style={{display:'flex',gap:8,marginTop:12}}>{['Evidence Requested','Under Review','Resolved','Dismissed','Escalated'].map(s=><button key={s} className="btn ghost small" onClick={async()=>{ try{ const u=await api.patchDispute(d.id,s); setList(list.map(x=>x.id===d.id?{...x,status:u.status}:x)); }catch(e){ toast(e.message);} }}>{s}</button>)}</div>}
+    {['Department Admin','Librarian','Supervisor'].includes(user.role) && d.status!=='Resolved' && <div style={{display:'flex',gap:8,marginTop:12,flexWrap:'wrap'}}>{['Evidence Requested','Under Review','Resolved','Dismissed','Escalated'].map(s=><button key={s} className="btn ghost small" onClick={async()=>{ try{ const u=await api.patchDispute(d.id,s); setList(list.map(x=>x.id===d.id?{...x,status:u.status}:x)); }catch(e){ toast(e.message);} }}>{s}</button>)}</div>}
   </article>)}</div>}
   {show && <div className="modal-bg" onClick={()=>setShow(false)}><div className="modal" onClick={e=>e.stopPropagation()}><h3 style={{fontSize:23,margin:'0 0 14px'}}>Raise a dispute / correction</h3>
   <form onSubmit={submit}><div className="grid2"><div className="field"><label className="lbl">Category</label><select className="input" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{['Incorrect Metadata','Authorship / Contribution','False Institution Claim','Duplicate / Provenance Conflict','Copyright / Rights Claim','Privacy / Confidentiality','Certificate / Verification Error','Relationship / Lineage Error'].map(c=><option key={c}>{c}</option>)}</select></div>
   <div className="field"><label className="lbl">Related record</label><select className="input" value={form.recordId} onChange={e=>setForm({...form,recordId:e.target.value})}><option value="">General / none</option>{records.map(r=><option key={r.id} value={r.id}>{r.title.slice(0,70)}…</option>)}</select></div></div>
   <div className="field"><label className="lbl">Detail *</label><textarea className="input" rows={4} required value={form.detail} onChange={e=>setForm({...form,detail:e.target.value})} placeholder="What is wrong, what evidence supports the correction, and what outcome you seek…"/></div>
-  <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}><button type="button" className="btn ghost" onClick={()=>setShow(false)}>Cancel</button><button className="btn primary">Submit to triage</button></div></form></div></div>}
+  <div style={{display:'flex',gap:10,justifyContent:'flex-end',flexWrap:'wrap'}}><button type="button" className="btn ghost" onClick={()=>setShow(false)}>Cancel</button><button className="btn primary">Submit to triage</button></div></form></div></div>}
   </div>;
 }
 export function InstitutionsPage({ institutions }) {
   return <div className="fade-in"><h2 style={{fontSize:28,margin:'0 0 6px'}}>Institutions</h2>
   <p style={{color:'var(--muted)',maxWidth:720,lineHeight:1.7}}>Only <strong>Verified</strong> institutions may issue Institutionally Verified status and certificates. Each institution governs its own departments, workflows and retention — and can never see another institution’s private records.</p>
   <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:16,marginTop:18}} className="ov-grid">{institutions.map(i=><article key={i.id} className="card" style={{padding:24}}>
-    <div style={{display:'flex',gap:14,alignItems:'center'}}><span className="avatar lg" style={{background:i.color}}>{i.short.slice(0,2)}</span><div><h3 style={{margin:'0 0 3px',fontSize:19}}>{i.name}</h3><p style={{margin:0,fontSize:13,color:'var(--muted)'}}>{i.city} · {i.category} · {i.domain}</p></div>
+    <div style={{display:'flex',gap:14,alignItems:'center',flexWrap:'wrap'}}><span className="avatar lg" style={{background:i.color}}>{i.short.slice(0,2)}</span><div><h3 style={{margin:'0 0 3px',fontSize:19}}>{i.name}</h3><p style={{margin:0,fontSize:13,color:'var(--muted)'}}>{i.city} · {i.category} · {i.domain}</p></div>
     <span className={`badge ${i.status==='Verified'?'green':'amber'}`} style={{marginLeft:'auto'}}>{i.status}</span></div>
     <p style={{fontSize:14,color:'var(--muted)',lineHeight:1.7}}>{i.records} Research Records on ALIMS · {(i.members||0).toLocaleString()} members · Departments: {(i.departments||[]).join(', ')}</p>
     <div className="progress" aria-hidden="true"><div style={{width: i.status==='Verified'?'86%':'30%'}}/></div>

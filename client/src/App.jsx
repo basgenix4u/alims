@@ -117,6 +117,15 @@ function AppShell() {
   // hash-based public verify: #/verify/CODE
   useEffect(() => { const h = location.hash; const m = h.match(/#\/verify\/(.+)/); if (m) { setPage('verify'); setParam(decodeURIComponent(m[1])); if (!user) setAuthMode('__verify__'); } }, []);
 
+  // Mobile drawer: Escape closes it and the page behind doesn't scroll while open
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [open]);
+
   const logout = () => { clearSession(); setUser(null); setAuthMode(null); setPage('overview'); toast('Signed out. Your records remain safely preserved on ALIMS.'); };
   const loginAs = (mode = 'login') => { setAuthMode(mode); window.scrollTo(0, 0); };
   const demo = async (email) => { try { const d = await api.login(email, 'demo1234'); setSession(d.token, d.user); setUser(d.user); setAuthMode(null); toast(`Welcome, ${d.user.name} — exploring as ${d.user.role}.`); } catch (e) { toast(e.message); setAuthMode('login'); } };
@@ -141,13 +150,14 @@ function AppShell() {
         <button className="btn ghost small" style={{ width: '100%', justifyContent: 'center', marginTop: 8, background: 'transparent', color: '#94A3B8', borderColor: 'rgba(255,255,255,.15)' }} onClick={() => { clearSession(); setUser(null); setAuthMode(null); }}>View public site</button>
       </div>
     </aside>
+    {open && <div className="scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
     <div className="main">
       <div className="topbar">
         <button className="hamb" onClick={() => setOpen(!open)} aria-label="Toggle navigation"><Icon name="menu" size={19}/></button>
         <strong style={{ fontFamily: 'Fraunces,serif', fontSize: 20 }}>{title}</strong>
-        <span className="badge green" style={{ marginLeft: 4 }}>{user.role}</span>
+        <span className="badge green role-badge" style={{ marginLeft: 4 }}>{user.role}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button className="btn ghost small" onClick={() => go('discover')}><Icon name="search" size={15}/> Search</button>
+          <button className="btn ghost small" onClick={() => go('discover')}><Icon name="search" size={15}/><span className="tb-label"> Search</span></button>
           <button className="btn primary small" onClick={() => go('records')}>+ New Record</button>
         </div>
       </div>

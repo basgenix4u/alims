@@ -33,6 +33,7 @@ export default function Landing({ onLogin, onDemo }) {
   useReveal();
   const [stats, setStats] = useState(null);
   const [faq, setFaq] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [verifyCode, setVerifyCode] = useState('NXR-2025-01041');
   const [verifyResult, setVerifyResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
@@ -47,11 +48,21 @@ export default function Landing({ onLogin, onDemo }) {
       <nav className="nav-links" aria-label="Primary">
         <a href="#features">Platform</a><a href="#how">How it works</a><a href="#lineage">Lineage</a><a href="#who">Who it serves</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
       </nav>
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <button className="nav-burger" onClick={() => setMenuOpen(o => !o)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}><Icon name="menu" size={19}/></button>
         <button className="btn ghost small" onClick={() => onLogin()}>Sign in</button>
         <button className="btn primary small" onClick={() => onLogin('register')}>Get started</button>
       </div>
-    </div></header>
+    </div>
+    {menuOpen && <nav className="nav-menu open" aria-label="Mobile">
+      <a href="#features" onClick={() => setMenuOpen(false)}>Platform</a>
+      <a href="#how" onClick={() => setMenuOpen(false)}>How it works</a>
+      <a href="#lineage" onClick={() => setMenuOpen(false)}>Lineage</a>
+      <a href="#who" onClick={() => setMenuOpen(false)}>Who it serves</a>
+      <a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing</a>
+      <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
+    </nav>}
+    </header>
 
 
     {/* LIVE REGISTER TICKER */}
@@ -142,7 +153,7 @@ export default function Landing({ onLogin, onDemo }) {
       <style>{`@media(max-width:920px){.how-grid{grid-template-columns:1fr 1fr!important}}@media(max-width:560px){.how-grid{grid-template-columns:1fr!important}}`}</style>
 
       {/* VERIFY SHOWCASE */}
-      <div id="verify" className="reveal" style={{ marginTop: 56, background: 'linear-gradient(160deg,#F1EDFF,#FFFFFF 70%)', border: '1.5px solid #111111', boxShadow: '5px 5px 0 #111111', borderRadius: 14, padding: '36px', color: '#111111', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }} >
+      <div id="verify" className="reveal verify-grid" style={{ marginTop: 56, background: 'linear-gradient(160deg,#F1EDFF,#FFFFFF 70%)', border: '1.5px solid #111111', boxShadow: '5px 5px 0 #111111', borderRadius: 14, padding: '36px', color: '#111111', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }} >
         <div>
           <span className="badge dark">PUBLIC VERIFICATION</span>
           <h3 style={{ fontSize: 30, margin: '14px 0 10px' }}>Scan. Check. Trust — in under two seconds.</h3>
@@ -167,7 +178,7 @@ export default function Landing({ onLogin, onDemo }) {
     </div></section>
 
     {/* LINEAGE SHOWCASE */}
-    <section className="section alt" id="lineage"><div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
+    <section className="section alt" id="lineage"><div className="container lineage-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
       <div className="reveal">
         <span className="eyebrow">04 · Academic lineage</span>
         <h2 className="sec-title">Knowledge has ancestors.<br />ALIMS maps them honestly.</h2>
